@@ -1,0 +1,1107 @@
+<!doctype html>
+<html lang="en" data-theme="omens">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#000000">
+<title>Vantage — Pool Scoring</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@350;420;500;560;620&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── Design tokens (Vantage "omens" theme, extracted) ───────────────────────── */
+:root{
+    --metal-top:#2d2d2d; --metal-bottom:#000000;
+    --btn-aqua-top:#555555; --btn-aqua-bot:#000000;
+    --header-text:#ffffff;
+    --text-main:#eceff4; --text-light:#a8b1c0;
+    --window-bg: color-mix(in srgb, var(--metal-bottom) 26%, #12151c);
+    --inset-bg:  color-mix(in srgb, var(--metal-bottom) 36%, #0e1118);
+    --track-bg:  color-mix(in srgb, var(--metal-bottom) 46%, #0d1016);
+    --success:#10b981; --danger:#ef4444;
+    --font-ui:'Oxanium','Nunito','Lucida Grande','Segoe UI',sans-serif;
+    --font-weight-body:350; --font-weight-ui:420; --font-weight-strong:500;
+    --font-weight-heading:560; --font-weight-display:620;
+    --vantage-card-radius:16px; --canvas-viewbox-radius:10px;
+    /* Canvas pools chrome (same tokens the desktop pool card uses) */
+    --canvas-toolbar-height:40px;
+    --canvas-toolbar-pad-x:19px;
+    --canvas-toolbar-bg: color-mix(in srgb, var(--inset-bg) 72%, transparent);
+    --canvas-toolbar-border: color-mix(in srgb, var(--header-text) 10%, transparent);
+    --canvas-toolbar-blur: blur(20px) saturate(1.06);
+    --canvas-toolbar-inset-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+    font-family:var(--font-ui); font-weight:var(--font-weight-body);
+    color:var(--text-main); background:#000;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    overscroll-behavior:none;
+}
+
+/* ── Background (Vantage gradient-balls WebGL, same as the app) ──────────────── */
+body[data-vantage-background="gradient-balls"]{ background-color:#000 !important; background-image:none !important; }
+.vantage-background{ position:fixed; inset:0; width:100%; height:100%; z-index:0; pointer-events:none; overflow:hidden; background-color:#000; }
+.vantage-background__balls,.vantage-background__canvas{ width:100%; height:100%; display:block; }
+
+/* ── App shell: pool floats on top, footer pinned ───────────────────────────── */
+.ref-app{ position:relative; z-index:1; min-height:100dvh; display:flex; flex-direction:column; padding-bottom:calc(72px + env(safe-area-inset-bottom)); }
+.ref-stage{
+    flex:1 1 auto; min-height:0; overflow-y:auto;
+    display:flex; align-items:flex-start; justify-content:center;
+    padding:16px 12px 12px;
+}
+.ref-state{ margin:auto; text-align:center; color:var(--text-light); max-width:280px; padding:24px; }
+.ref-state strong{ display:block; color:var(--text-main); font-size:15px; font-weight:var(--font-weight-heading); margin-bottom:6px; }
+
+/* ── Pool panel card — canvas pools chrome (exact desktop recipe) ───────────── */
+.panel{
+    background: var(--canvas-toolbar-bg);
+    backdrop-filter: var(--canvas-toolbar-blur);
+    -webkit-backdrop-filter: var(--canvas-toolbar-blur);
+    border: 1px solid var(--canvas-toolbar-border);
+    border-radius: var(--canvas-viewbox-radius);
+    box-shadow: var(--canvas-toolbar-inset-shadow);
+    width:100%; max-width:680px; display:flex; flex-direction:column; overflow:hidden;
+}
+.panel-header{
+    background: var(--canvas-toolbar-bg);
+    border: none;
+    border-bottom: 1px solid var(--canvas-toolbar-border);
+    border-radius: var(--canvas-viewbox-radius) var(--canvas-viewbox-radius) 0 0;
+    box-shadow: none;
+    text-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    padding: 0 var(--canvas-toolbar-pad-x);
+    min-height: var(--canvas-toolbar-height);
+    font-weight: var(--font-weight-heading);
+    font-size: 13px;
+    display: flex; align-items: center; gap: 10px;
+    color: var(--header-text);
+}
+.pool-header-title{ display:inline-flex; align-items:center; gap:8px; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pool-header-referee{ margin-left:auto; padding-left:12px; font-size:12px; font-weight:var(--font-weight-heading);
+    color:var(--header-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex-shrink:1; min-width:0; }
+.panel-content{
+    padding: 4px 6px;
+    background: color-mix(in srgb, var(--inset-bg) 52%, transparent);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 2px 14px rgba(0, 0, 0, 0.06);
+    backdrop-filter: blur(18px) saturate(1.05);
+    -webkit-backdrop-filter: blur(18px) saturate(1.05);
+    border-radius: 0;
+}
+.panel-content-pool-scoreboard{
+    background: transparent;
+    padding: 4px 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 2px 14px rgba(0, 0, 0, 0.06);
+}
+.pool-card-footer{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:space-between;
+    min-height: 32px;
+    padding: 0 14px;
+    background: var(--canvas-toolbar-bg);
+    border-top: 1px solid var(--canvas-toolbar-border);
+    border-radius: 0 0 var(--canvas-viewbox-radius) var(--canvas-viewbox-radius);
+    box-sizing: border-box;
+    font-size:12px; color:var(--text-light); font-weight:var(--font-weight-heading);
+}
+.pool-card-footer-left,.pool-card-footer-right{ display:inline-flex; align-items:center; gap:8px; min-width:0; }
+
+/* ── Pool scoreboard (same classes + rules as #pools-container desktop) ─────── */
+.pool-scoreboard-shell{
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+    border-radius:0;
+    padding:2px 4px;
+    background:transparent;
+    border:0;
+    box-shadow:none;
+    overflow:hidden;
+}
+.pool-cards-table-wrap{
+    flex-grow:1;
+    min-height:0;
+    overflow-x:auto;
+    overflow-y:hidden;
+    background:transparent;
+    border:none;
+    box-shadow:none;
+}
+.pool-scoreboard-table{
+    --pool-control-size:26px;
+    --pool-row-gap-y:12.96px;
+    width:100%;
+    min-width:0;
+    border-collapse:separate;
+    border-spacing:8.64px var(--pool-row-gap-y);
+    table-layout:fixed;
+    font-size:12px;
+    color:var(--text-main);
+    font-family:var(--font-ui);
+}
+.pool-scoreboard-table thead th{
+    border:0;
+    background:linear-gradient(180deg,
+        color-mix(in srgb, var(--window-bg) 72%, #ffffff 28%) 0%,
+        color-mix(in srgb, var(--inset-bg) 84%, #ffffff 16%) 100%
+    );
+    color:var(--text-main);
+    text-align:center;
+    font-weight:var(--font-weight-display);
+    letter-spacing:0.01em;
+    text-shadow:0 1px 0 rgba(255, 255, 255, 0.35);
+    border-radius:4px;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.38),
+        0 1px 3px rgba(0, 0, 0, 0.05);
+    font-size:11.25px;
+    padding:4px 4px;
+}
+.pool-scoreboard-table thead th.pool-scoreboard-fencer-head{
+    text-align:left;
+    width:140px;
+    padding-left:4px;
+    padding-right:4px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+.pool-scoreboard-table thead th.pool-scoreboard-bout-head{
+    width:26px;
+    padding-left:1px;
+    padding-right:1px;
+    font-size:11px;
+    max-width:26px;
+    min-width:0;
+    overflow:hidden;
+    text-overflow:clip;
+}
+.pool-scoreboard-table thead th.pool-scoreboard-stat-head{
+    width:26px;
+    padding-left:1px;
+    padding-right:1px;
+    font-size:11px;
+    max-width:26px;
+    min-width:0;
+    overflow:hidden;
+    text-overflow:clip;
+}
+.pool-scoreboard-table tbody tr:nth-child(even) td{ background:transparent; }
+.pool-scoreboard-table tbody tr td{
+    border:0;
+    padding:0;
+    vertical-align:middle;
+    line-height:1.05;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+.pool-scoreboard-table tbody tr td:last-child{ padding-right:0; }
+.pool-scoreboard-fencer-cell{
+    width:140px;
+    padding-top:0;
+    padding-bottom:0;
+}
+.pool-row-card{
+    position:relative;
+    padding:8px 12px 5px;
+    border-radius:var(--canvas-viewbox-radius, 10px);
+    border:1px solid color-mix(in srgb, var(--header-text) 14%, transparent);
+    background:linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--inset-bg) 66%, transparent) 0%,
+        color-mix(in srgb, var(--window-bg) 58%, transparent) 100%
+    );
+    backdrop-filter:blur(12px) saturate(1.04);
+    -webkit-backdrop-filter:blur(12px) saturate(1.04);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        0 6px 18px rgba(0, 0, 0, 0.14);
+    min-height:0;
+    color:var(--header-text);
+    text-shadow:0 1px 1px rgba(0, 0, 0, 0.35);
+    overflow:hidden;
+}
+.pool-row-card::before{
+    content:'';
+    position:absolute;
+    inset:0 auto 0 0;
+    width:4px;
+    background:linear-gradient(180deg,
+        color-mix(in srgb, var(--btn-aqua-top) 70%, #ffffff 30%) 0%,
+        color-mix(in srgb, var(--btn-aqua-bot) 76%, #000000 24%) 100%
+    );
+    opacity:0.86;
+    pointer-events:none;
+}
+.pool-row-card--scoring{
+    min-height:0;
+    padding:8px 12px 5px;
+}
+.pool-row-card-seed{
+    position:absolute;
+    top:6px;
+    right:8px;
+    font-size:11px;
+    font-weight:var(--font-weight-display);
+    color:color-mix(in srgb, var(--header-text) 84%, var(--text-main) 16%);
+    background:color-mix(in srgb, var(--window-bg) 42%, transparent);
+    border:1px solid color-mix(in srgb, var(--header-text) 16%, transparent);
+    border-radius:999px;
+    padding:1px 7px;
+    box-shadow:0 1px 2px rgba(0,0,0,0.08);
+}
+.pool-row-card-name{
+    font-size:14px;
+    font-weight:var(--font-weight-heading);
+    line-height:1.2;
+    margin-bottom:4px;
+    padding-right:44px;
+    word-break:break-word;
+    letter-spacing:0.01em;
+}
+.pool-row-card-meta{
+    font-size:11px;
+    color:color-mix(in srgb, var(--header-text) 84%, var(--text-main) 16%);
+    font-weight:var(--font-weight-heading);
+    line-height:1.12;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:0 6px;
+    word-break:break-word;
+    margin-bottom:0;
+    letter-spacing:0.01em;
+}
+.pool-row-card-meta .sep{ opacity:0.55; }
+.pool-scoreboard-bout-cell{
+    width:var(--pool-control-size);
+    max-width:var(--pool-control-size);
+    min-width:0;
+    text-align:center;
+    padding:0 1px;
+    overflow:hidden;
+}
+.pool-scoreboard-stat-cell{
+    width:var(--pool-control-size);
+    max-width:var(--pool-control-size);
+    min-width:0;
+    text-align:center;
+    font-weight:var(--font-weight-display);
+    font-size:11.25px;
+    color:var(--text-main);
+    text-shadow:0 1px 0 rgba(255, 255, 255, 0.28);
+    overflow:hidden;
+}
+input[type="text"],
+.score-input{
+    font-family:var(--font-ui);
+    font-size:13px;
+    border:1px solid #aaa;
+    box-shadow:inset 0 1px 3px rgba(0,0,0,0.08);
+    border-radius:6px;
+    padding:4px 6px;
+    background:var(--inset-bg);
+    color:var(--text-main);
+    font-weight:var(--font-weight-body);
+    box-sizing:border-box;
+}
+input[type="text"]:focus,
+.score-input:focus{
+    outline:none;
+    border-color:var(--btn-aqua-bot);
+    box-shadow:inset 0 1px 3px rgba(0,0,0,0.12), 0 0 4px var(--btn-aqua-bot);
+}
+.score-input{
+    width:35px;
+    text-align:center;
+    font-weight:var(--font-weight-heading);
+    font-size:13px;
+}
+.pool-scoreboard-input{
+    width:var(--pool-control-size);
+    min-height:var(--pool-control-size);
+    height:var(--pool-control-size);
+    padding:1px 0;
+    border-radius:6px;
+    text-align:center;
+    font-weight:var(--font-weight-heading);
+    font-size:12px;
+    font-family:var(--font-ui);
+}
+.score-input.invalid,
+.pool-scoreboard-input.invalid{
+    outline:2px solid var(--danger);
+    box-shadow:0 0 6px rgba(239,68,68,0.15);
+}
+.pool-scoreboard-blocked{
+    width:100%;
+    max-width:var(--pool-control-size);
+    height:var(--pool-control-size);
+    margin:0 auto;
+    border-radius:6px;
+    background:
+        repeating-linear-gradient(45deg,
+            color-mix(in srgb, var(--text-light) 40%, var(--window-bg) 60%) 0 5px,
+            color-mix(in srgb, var(--text-light) 30%, var(--inset-bg) 70%) 5px 10px
+        );
+    border:1px solid color-mix(in srgb, var(--text-light) 34%, var(--window-bg) 66%);
+    box-shadow:
+        inset 0 2px 4px rgba(0, 0, 0, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    opacity:0.72;
+}
+
+/* ── Horizontal-scroll affordance ("there's more to the right") ─────────────── */
+.scroll-hint{
+    position:absolute; top:1px; right:1px; bottom:1px; width:52px; pointer-events:none; z-index:2;
+    display:flex; align-items:center; justify-content:flex-end; padding-right:6px; border-radius:0 var(--canvas-viewbox-radius) var(--canvas-viewbox-radius) 0;
+    background:linear-gradient(90deg, transparent, color-mix(in srgb, var(--inset-bg) 94%, transparent));
+    opacity:0; transition:opacity .22s ease;
+}
+.pool-scoreboard-shell.can-scroll .scroll-hint{ opacity:1; }
+.scroll-hint svg{ width:22px; height:22px; color:var(--text-main); filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5)); animation:nudge 1.15s ease-in-out infinite; }
+@keyframes nudge{ 0%,100%{ transform:translateX(0); } 50%{ transform:translateX(4px); } }
+@media (prefers-reduced-motion: reduce){ .scroll-hint svg{ animation:none; } }
+
+/* ── App footer: soft black fade + white desktop pool-dot switcher ──────────── */
+.ref-footer{
+    position:fixed; left:0; right:0; bottom:0; z-index:60;
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    padding:18px 22px calc(14px + env(safe-area-inset-bottom));
+    border:none; background:transparent;
+    background-image:
+        radial-gradient(120% 90% at 50% 120%, rgba(0, 0, 0, 0.58) 0%, rgba(0, 0, 0, 0.32) 40%, transparent 74%),
+        linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.38) 50%, rgba(0, 0, 0, 0.78) 100%);
+    backdrop-filter: blur(10px) saturate(1.02);
+    -webkit-backdrop-filter: blur(10px) saturate(1.02);
+    pointer-events:none;
+}
+.ref-footer > *{ pointer-events:auto; }
+.ref-icon-btn{
+    width:44px; height:44px; display:inline-flex; align-items:center; justify-content:center;
+    border:none; background:transparent; box-shadow:none; padding:0;
+    color: rgba(255, 255, 255, 0.88);
+    cursor:pointer; border-radius:0;
+    transition:color .18s ease, filter .18s ease, transform .12s ease;
+}
+.ref-icon-btn:hover{
+    color:#fff;
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.35));
+}
+.ref-icon-btn:active{ transform:translateY(1px); filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.22)); }
+.ref-icon-btn.is-active{ color:#fff; filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.4)); }
+.ref-icon-btn svg{ width:22px; height:22px; display:block; }
+.ref-dot-switcher{
+    display:flex; align-items:center; gap:12px; padding:0;
+}
+.ref-dot{
+    --pool-dot-spring: cubic-bezier(0.175, 0.885, 0.32, 1.12);
+    width:11px; height:11px; border-radius:9999px; border:0; padding:0; cursor:pointer;
+    background: rgba(255, 255, 255, 0.35);
+    color: #1a1a1a;
+    box-shadow: none;
+    transition:
+        width 0.42s var(--pool-dot-spring),
+        background-color 0.28s ease,
+        filter 0.2s ease;
+}
+.ref-dot:hover:not(.active){
+    background: rgba(255, 255, 255, 0.52);
+    filter: none;
+}
+.ref-dot.active{
+    width:30px;
+    background: #f0f0f0;
+    box-shadow: none;
+    filter: none;
+    cursor: default;
+}
+
+/* ── Baked-in pool widgets (opaque body + glass headers, matching desktop) ─── */
+.ref-content{ width:100%; max-width:680px; display:flex; flex-direction:column; gap:14px; }
+.pool-widgets{ display:flex; flex-direction:column; gap:14px; }
+.pool-widget{
+    display:flex; flex-direction:column; min-width:0; border-radius:12px; overflow:hidden;
+    background:var(--inset-bg);
+    border:1px solid color-mix(in srgb, var(--text-main) 10%, transparent);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.05), 0 2px 10px rgba(0,0,0,0.14);
+}
+.pool-widget-head{
+    display:flex; align-items:center; gap:7px; padding:9px 14px;
+    font-size:10.5px; font-weight:var(--font-weight-heading); letter-spacing:0.02em;
+    text-transform:none; color:var(--text-main);
+    border-bottom:1px solid color-mix(in srgb, var(--text-main) 9%, transparent);
+    background:color-mix(in srgb, var(--window-bg) 44%, transparent);
+    backdrop-filter:blur(18px) saturate(1.05);
+    -webkit-backdrop-filter:blur(18px) saturate(1.05);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.pool-widget-head svg{ width:13px; height:13px; color:var(--text-main); stroke:var(--text-main); flex-shrink:0; }
+.pool-widget-body{ padding:14px 16px 16px; flex:1 1 auto; min-height:0; background:var(--inset-bg); }
+.pool-health-body{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; }
+.pool-ring-hero{ position:relative; width:150px; height:150px; flex-shrink:0; }
+.pool-ring-svg{ display:block; }
+.pool-ring-track{ stroke:color-mix(in srgb,var(--text-main) 12%, transparent); }
+.pool-ring-fill{ stroke:#fdfdfd; transition:stroke-dashoffset 1.1s cubic-bezier(0.22,1,0.36,1); }
+.pool-ring-hero-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; text-align:center; pointer-events:none; }
+.pool-ring-hero-big{ font-family:'Scoreboard60s',var(--font-ui),monospace; font-size:28.8px; line-height:1; font-weight:800; color:var(--text-main); text-shadow:0 1px 3px rgba(0,0,0,0.35); }
+.pool-ring-hero-complete{ color:#ffce5a; }
+.pool-ring-hero-label{ font-size:7.65px; letter-spacing:0.14em; text-transform:uppercase; color:var(--text-light); margin-top:2px; }
+.pool-leaderboard{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; }
+.pool-lb-row{
+    display:grid; grid-template-columns:22px minmax(0,1fr) auto auto auto; align-items:center; gap:9px;
+    padding:8px 2px; border-bottom:1px solid color-mix(in srgb, var(--text-main) 8%, transparent);
+}
+.pool-lb-row:last-child{ border-bottom:none; }
+.pool-lb-rank{ display:flex; align-items:center; justify-content:center; height:18px; font-family:'Scoreboard60s',var(--font-ui),monospace; font-size:15px; line-height:1; font-weight:800; color:var(--text-light); }
+.pool-lb-rank-1{ color:#f5a623; } .pool-lb-rank-2{ color:#c2ccd8; } .pool-lb-rank-3{ color:#d08a52; }
+.pool-lb-rank-crown{ width:16px; height:16px; color:#ffce5a; stroke:#ffce5a; }
+.pool-lb-main{ display:flex; align-items:center; min-width:0; height:18px; }
+.pool-lb-name{ display:block; width:100%; font-family:var(--font-ui); font-weight:var(--font-weight-strong); font-size:12.5px; line-height:18px; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pool-lb-stat{ font-family:'Scoreboard60s',var(--font-ui),monospace; font-size:15px; font-weight:800; color:var(--text-main); font-variant-numeric:tabular-nums; }
+.pool-lb-stat small{ font-size:8px; margin-left:1px; color:var(--text-light); vertical-align:super; }
+.pool-lb-bouts{ min-width:24px; text-align:right; color:var(--text-light); }
+.pool-lb-ind{ min-width:30px; text-align:right; color:var(--text-light); }
+.pool-lb-ind.is-pos{ color:var(--success); } .pool-lb-ind.is-neg{ color:var(--danger); }
+.pool-lb-row.is-leader .pool-lb-name{ color:#ffd873; }
+.pool-widget-body-empty{ display:flex; align-items:center; justify-content:center; }
+.pool-lb-empty{ margin:0; padding:0 12px; font-size:12px; font-style:italic; color:var(--text-light); text-align:center; }
+
+/* ── Bout flow: picker sheet → timer → confirm ──────────────────────────────── */
+.ref-overlay{ position:fixed; inset:0; z-index:70; display:flex; opacity:0; pointer-events:none; transition:opacity .2s ease; }
+.ref-overlay.open{ opacity:1; pointer-events:auto; }
+.ref-overlay-back{ position:absolute; inset:0; background:rgba(0,0,0,0.6); }
+.ref-sheet-wrap{ position:relative; margin-top:auto; width:100%; display:flex; justify-content:center; }
+.ref-sheet{ position:relative; width:100%; max-width:520px; background:var(--window-bg); border:1px solid #999; border-bottom:0; border-radius:18px 18px 0 0; box-shadow:0 -14px 44px rgba(0,0,0,0.5); transform:translateY(30px); transition:transform .22s ease; padding-bottom:calc(16px + env(safe-area-inset-bottom)); overflow:hidden; }
+.ref-overlay.open .ref-sheet{ transform:translateY(0); }
+.ref-sheet-head{ background:linear-gradient(180deg,var(--metal-top) 0%,var(--metal-bottom) 100%); border-bottom:1px solid #888; padding:12px 16px; color:var(--header-text); font-weight:var(--font-weight-heading); font-size:14px; text-shadow:0 1px 0 rgba(255,255,255,0.25); display:flex; align-items:center; justify-content:space-between; }
+.ref-sheet-head .x{ cursor:pointer; opacity:0.8; font-size:16px; }
+.ref-sheet-body{ padding:16px; }
+.bout-picker{ display:flex; align-items:flex-start; gap:10px; }
+.bout-pick-col{ flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:6px; }
+.bout-pick-label{ font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-light); font-weight:var(--font-weight-heading); text-align:center; }
+.bout-pick-vs{ align-self:center; color:var(--text-light); font-weight:800; font-size:13px; padding-top:26px; }
+.bout-select{ width:100%; font-family:var(--font-ui); font-size:14px; color:var(--text-main); background:var(--inset-bg); border:1px solid #aaa; border-radius:10px; padding:11px 12px; -webkit-appearance:none; appearance:none; }
+.bout-select:disabled{ opacity:0.5; }
+.ref-btn-row{ display:flex; gap:10px; margin-top:16px; }
+.rbtn{ flex:1 1 0; padding:12px 16px; border-radius:12px; font-family:var(--font-ui); font-size:14px; font-weight:var(--font-weight-heading); border:1px solid color-mix(in srgb,#fff 14%,transparent); color:var(--header-text); cursor:pointer; background:linear-gradient(180deg, color-mix(in srgb,var(--btn-aqua-top) 92%, #fff 8%), color-mix(in srgb,var(--btn-aqua-bot) 90%, #000 10%)); box-shadow:inset 0 1px 0 rgba(255,255,255,0.16); }
+.rbtn:active{ transform:translateY(1px); }
+.rbtn-ghost{ background:var(--inset-bg); color:var(--text-main); border:1px solid #888; box-shadow:none; }
+.rbtn-white{ background:linear-gradient(180deg,#fdfdfd,#e0e0e0); color:#111; border:1px solid #ccc; }
+.rbtn:disabled{ opacity:0.45; }
+/* full-screen timer — sits above stage, below footer chrome */
+.ref-timer{
+    position:fixed; inset:0; z-index:50;
+    background:linear-gradient(180deg, rgba(6,7,10,0.94), rgba(6,7,10,0.98));
+    display:flex; flex-direction:column;
+    opacity:0; pointer-events:none; transition:opacity .2s ease;
+    padding:env(safe-area-inset-top) 0 calc(72px + env(safe-area-inset-bottom));
+}
+.ref-timer.open{ opacity:1; pointer-events:auto; }
+.ref-timer.is-parked{ opacity:0; pointer-events:none; visibility:hidden; }
+.ref-stage.is-hidden{ display:none; }
+.ref-timer-top{ display:flex; align-items:center; justify-content:space-between; padding:14px 18px; color:var(--text-light); font-size:13px; font-weight:var(--font-weight-heading); }
+.ref-timer-top .x{ cursor:pointer; }
+.ref-timer-clock{ font-family:'Scoreboard60s',var(--font-ui),monospace; font-weight:800; font-size:clamp(64px,20vw,116px); line-height:1; text-align:center; color:var(--text-main); font-variant-numeric:tabular-nums; letter-spacing:2px; margin:2px 0; }
+.ref-timer-clock.warn{ color:#ffce5a; } .ref-timer-clock.done{ color:var(--danger); }
+.ref-timer-controls{ display:flex; gap:12px; justify-content:center; padding:8px 18px; }
+.ref-timer-controls .rbtn{ flex:0 0 auto; }
+.ref-fencers{ flex:1 1 auto; display:flex; gap:12px; padding:10px 16px; min-height:0; }
+.ref-fencer{ flex:1 1 0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; border-radius:16px; border:1px solid #444; background:linear-gradient(180deg, color-mix(in srgb,var(--inset-bg) 92%, #000 8%), var(--window-bg)); padding:18px 10px; min-width:0; }
+.ref-fencer-name{ font-size:15px; font-weight:var(--font-weight-heading); color:var(--text-main); text-align:center; word-break:break-word; }
+.ref-fencer-score{ font-family:'Scoreboard60s',var(--font-ui),monospace; font-weight:800; font-size:76px; line-height:1; color:var(--text-main); }
+.ref-touch-btns{ display:flex; gap:10px; align-items:center; }
+.touch-btn{ width:54px; height:54px; border-radius:14px; font-size:28px; font-weight:800; display:flex; align-items:center; justify-content:center; border:1px solid #666; background:var(--inset-bg); color:var(--text-main); cursor:pointer; }
+.touch-btn.plus{ width:76px; background:linear-gradient(180deg,var(--btn-aqua-top),var(--btn-aqua-bot)); color:#fff; border-color:#777; }
+.touch-btn:active{ transform:translateY(1px); }
+/* confirm */
+.confirm-score{ display:flex; align-items:flex-start; justify-content:center; gap:16px; font-family:'Scoreboard60s',var(--font-ui),monospace; font-size:46px; font-weight:800; color:var(--text-main); margin:8px 0 2px; }
+.confirm-side{ display:flex; flex-direction:column; align-items:center; gap:3px; }
+.confirm-side .nm{ font-family:var(--font-ui); font-size:12.5px; color:var(--text-light); font-weight:var(--font-weight-heading); max-width:120px; text-align:center; }
+.confirm-side.win{ color:#ffd873; } .confirm-side.win .nm{ color:#ffd873; }
+.confirm-hint{ text-align:center; font-size:12.5px; color:var(--text-light); margin-top:8px; }
+.winner-pick{ display:flex; gap:10px; margin-top:10px; }
+
+/* ── Toast ──────────────────────────────────────────────────────────────────── */
+.ref-toast{
+    position:fixed; left:50%; bottom:88px; transform:translateX(-50%) translateY(12px);
+    z-index:70; padding:9px 16px; border-radius:999px; font-size:13px; font-weight:var(--font-weight-heading);
+    color:#fff; background:rgba(16,185,129,0.95); box-shadow:0 6px 20px rgba(0,0,0,0.4);
+    opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease; white-space:nowrap;
+}
+.ref-toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+.ref-toast.err{ background:rgba(239,68,68,0.96); }
+</style>
+</head>
+<body data-theme="omens" data-vantage-background="gradient-balls">
+    <div class="vantage-background"><div class="vantage-background__balls" id="vantage-background-balls"></div></div>
+
+    <div class="ref-app">
+        <main class="ref-stage" id="ref-stage">
+            <div class="ref-state" id="ref-state"><strong>Loading pool…</strong><span>Reading your QR link.</span></div>
+        </main>
+    </div>
+    <footer class="ref-footer">
+        <button type="button" class="ref-icon-btn" id="timer-btn" title="Start bout" aria-label="Start bout">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></svg>
+        </button>
+        <div class="ref-dot-switcher" id="dot-switcher" role="tablist" aria-label="Pools or bout">
+            <button type="button" class="ref-dot active" data-page="pools" role="tab" aria-selected="true" title="Pool sheet" aria-label="Pool sheet"></button>
+            <button type="button" class="ref-dot" data-page="bout" role="tab" aria-selected="false" title="Active bout" aria-label="Active bout"></button>
+        </div>
+    </footer>
+
+    <div class="ref-toast" id="ref-toast"></div>
+
+<script>
+/* ============================================================================
+   CONFIG — fill these two in after you create the Supabase project
+   (Project Settings → API → Project URL + anon public key).
+   ============================================================================ */
+const SUPABASE_URL = "https://poyglhqxjlivhotkpkej.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
+</script>
+
+<script>
+/* ── Vantage gradient-balls background (inlined, self-contained WebGL) ───────── */
+(function initVantageWaveBackground(global){
+    const VERTEX_SRC="attribute vec2 a_pos;void main(){gl_Position=vec4(a_pos,0.0,1.0);}";
+    const FRAGMENT_SRC="precision highp float;uniform vec2 u_resolution;uniform float u_time;uniform float u_xScale;uniform float u_yScale;uniform float u_distortion;void main(){vec2 p=(gl_FragCoord.xy*2.0-u_resolution)/min(u_resolution.x,u_resolution.y);float d=length(p)*u_distortion;float rx=p.x*(1.0+d);float gx=p.x;float bx=p.x*(1.0-d);float r=0.05/abs(p.y+sin((rx+u_time)*u_xScale)*u_yScale);float g=0.05/abs(p.y+sin((gx+u_time)*u_xScale)*u_yScale);float b=0.05/abs(p.y+sin((bx+u_time)*u_xScale)*u_yScale);gl_FragColor=vec4(r,g,b,1.0);}";
+    const X_SCALE=1.0,Y_SCALE=0.5,DISTORTION=0.05,TIME_STEP=0.01;
+    let gl=null,program=null,canvas=null,uResolution,uTime,uXScale,uYScale,uDistortion,rafId=null,animTime=0,running=false;
+    const shouldAnimate=()=>!(global.matchMedia&&global.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    function compile(t,s){const sh=gl.createShader(t);gl.shaderSource(sh,s);gl.compileShader(sh);if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(sh));return sh;}
+    function resize(){if(!canvas||!gl)return;const dpr=Math.min(global.devicePixelRatio||1,2);const w=Math.max(1,Math.floor(canvas.clientWidth*dpr));const h=Math.max(1,Math.floor(canvas.clientHeight*dpr));if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h);}}
+    function draw(){gl.uniform2f(uResolution,canvas.width,canvas.height);gl.uniform1f(uTime,animTime);gl.uniform1f(uXScale,X_SCALE);gl.uniform1f(uYScale,Y_SCALE);gl.uniform1f(uDistortion,DISTORTION);gl.drawArrays(gl.TRIANGLES,0,6);}
+    function frame(){if(!running)return;rafId=global.requestAnimationFrame(frame);resize();animTime+=TIME_STEP;draw();}
+    function renderStaticFrame(){resize();animTime=0;draw();}
+    function start(){if(running||!gl)return;running=true;rafId=global.requestAnimationFrame(frame);}
+    function stop(){running=false;if(rafId!=null){global.cancelAnimationFrame(rafId);rafId=null;}}
+    function boot(){
+        const host=document.getElementById('vantage-background-balls');if(!host)return;
+        canvas=document.createElement('canvas');canvas.className='vantage-background__canvas';host.appendChild(canvas);
+        try{
+            gl=canvas.getContext('webgl',{antialias:true,alpha:false})||canvas.getContext('experimental-webgl',{antialias:true,alpha:false});
+            if(!gl)throw new Error('no webgl');
+            program=gl.createProgram();gl.attachShader(program,compile(gl.VERTEX_SHADER,VERTEX_SRC));gl.attachShader(program,compile(gl.FRAGMENT_SHADER,FRAGMENT_SRC));gl.linkProgram(program);
+            if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw new Error('link');
+            gl.useProgram(program);
+            const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
+            const aPos=gl.getAttribLocation(program,'a_pos');gl.enableVertexAttribArray(aPos);gl.vertexAttribPointer(aPos,2,gl.FLOAT,false,0,0);
+            uResolution=gl.getUniformLocation(program,'u_resolution');uTime=gl.getUniformLocation(program,'u_time');uXScale=gl.getUniformLocation(program,'u_xScale');uYScale=gl.getUniformLocation(program,'u_yScale');uDistortion=gl.getUniformLocation(program,'u_distortion');
+        }catch(err){ if(canvas&&canvas.parentElement)canvas.parentElement.removeChild(canvas); gl=null; return; }
+        if(shouldAnimate())start(); else renderStaticFrame();
+        document.addEventListener('visibilitychange',()=>{ if(document.hidden)stop(); else if(shouldAnimate())start(); });
+        global.addEventListener('resize',resize);
+    }
+    if(document.readyState!=='loading')boot(); else document.addEventListener('DOMContentLoaded',boot);
+})(window);
+</script>
+
+<script>
+/* ── Referee scoring app ─────────────────────────────────────────────────────── */
+(function(){
+    "use strict";
+    const params = new URLSearchParams(location.search);
+    const SESSION_ID = params.get('s') || params.get('session') || '';
+    const TOKEN = params.get('t') || params.get('token') || '';
+
+    const stage = document.getElementById('ref-stage');
+    const toastEl = document.getElementById('ref-toast');
+    let SESSION = null;     // last session_get payload
+    let ROSTER = [];        // [{slot,name,club,rating,...}]
+    let boutMap = {};       // "a-b" -> submission
+
+    /* ---- helpers ---- */
+    function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function toast(msg, isErr){ toastEl.textContent=msg; toastEl.classList.toggle('err',!!isErr); toastEl.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>toastEl.classList.remove('show'),1900); }
+    function stateCard(title, sub){ stage.innerHTML = `<div class="ref-state"><strong>${esc(title)}</strong><span>${esc(sub||'')}</span></div>`; }
+
+    async function rpc(fn, body){
+        const resp = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+            method:'POST',
+            headers:{ apikey:SUPABASE_ANON_KEY, Authorization:`Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type':'application/json' },
+            body: JSON.stringify(body)
+        });
+        if(!resp.ok){ let m=''; try{ m=(await resp.json()).message||''; }catch(e){} throw new Error(m||('HTTP '+resp.status)); }
+        const txt = await resp.text();
+        return txt ? JSON.parse(txt) : null;
+    }
+
+    /* ---- score parsing (mirrors the app's V/D + touches convention) ---- */
+    function formatScore(input){
+        let v = input.value.toUpperCase().replace(/[^VD0-9]/g,'');
+        const m = v.match(/^([VD]?)(\d{0,2})/);
+        input.value = m ? ((m[1]||'')+(m[2]||'')) : v.slice(0,3);
+        input.classList.toggle('filled', input.value.trim()!=='');
+    }
+    function touches(val){ const m=String(val).toUpperCase().match(/(\d{1,2})/); return m?parseInt(m[1],10):null; }
+    function isV(val){ return /^V/i.test(String(val).trim()); }
+    function isD(val){ return /^D/i.test(String(val).trim()); }
+
+    function cellInput(r,c){ return stage.querySelector(`.score-input[data-row="${r}"][data-col="${c}"]`); }
+
+    /* ---- live V / TS / TR / Ind per row ---- */
+    function recompute(){
+        const n = ROSTER.length;
+        for(let r=0;r<n;r++){
+            let V=0, TS=0, TR=0;
+            for(let c=0;c<n;c++){
+                if(r===c) continue;
+                const mine = cellInput(r,c), opp = cellInput(c,r);
+                const mv = mine?touches(mine.value):null, ov = opp?touches(opp.value):null;
+                if(mv!=null){ TS+=mv; if(mine && isV(mine.value)) V++; else if(mv!=null && ov!=null && mv>ov) V++; }
+                if(ov!=null){ TR+=ov; }
+            }
+            setStat('v',r,V); setStat('ts',r,TS); setStat('tr',r,TR); setStat('ind',r,(TS-TR>0?'+':'')+(TS-TR));
+        }
+    }
+    function setStat(k,r,val){ const el=document.getElementById(`stat-${k}-${r}`); if(el) el.textContent=val; }
+
+    /* ---- submit one bout once both sides are entered ---- */
+    async function maybeSubmit(r,c){
+        const a=Math.min(r,c), b=Math.max(r,c);
+        const ai=cellInput(a,b), bi=cellInput(b,a);
+        if(!ai||!bi) return;
+        const at=touches(ai.value), bt=touches(bi.value);
+        if(at==null || bt==null) return;                 // wait until both filled
+        let victor=null;
+        if(isV(ai.value)&&!isV(bi.value)) victor=a;
+        else if(isV(bi.value)&&!isV(ai.value)) victor=b;
+        else if(at>bt) victor=a; else if(bt>at) victor=b;
+        if(victor==null){ ai.classList.add('invalid'); bi.classList.add('invalid'); toast('Mark the winner (V)', true); return; }
+        ai.classList.remove('invalid'); bi.classList.remove('invalid');
+        try{
+            await rpc('bout_submit', {
+                p_session_id:SESSION_ID, p_token:TOKEN,
+                p_a_slot:a, p_b_slot:b, p_a_score:at, p_b_score:bt, p_victor_slot:victor,
+                p_a_signature:'', p_b_signature:'', p_ref_name:(SESSION&&SESSION.referee)||''
+            });
+            toast(`Bout saved · ${ROSTER[victor]? shortName(ROSTER[victor].name):'V'} wins`);
+        }catch(err){ toast('Save failed: '+err.message, true); }
+    }
+    function shortName(n){ const p=String(n||'').trim().split(/\s+/); return p.length>1? (p[0][0]+'. '+p[p.length-1]) : (p[0]||''); }
+
+    /* ---- render the pool card ---- */
+    function render(){
+        const n = ROSTER.length;
+        let headerRow = '<th class="pool-scoreboard-fencer-head">Fencer</th>';
+        ROSTER.forEach((_, i) => { headerRow += `<th class="pool-scoreboard-bout-head" aria-label="Bout ${i + 1}">${i + 1}</th>`; });
+        headerRow += '<th class="pool-scoreboard-stat-head">V</th><th class="pool-scoreboard-stat-head">TS</th><th class="pool-scoreboard-stat-head">TR</th><th class="pool-scoreboard-stat-head">Ind</th>';
+
+        const rows = ROSTER.map((f, r) => {
+            const seed = f.seed != null ? f.seed : (r + 1);
+            const rating = f.rating || 'U';
+            const birth = f.birthYear || f.birth_year || '--';
+            const mid = f.memberId || f.member_id || f.usfaId || '--';
+            const club = f.club || 'UNAT';
+            let cells = `
+                <td class="pool-scoreboard-fencer-cell">
+                    <div class="pool-row-card pool-row-card--scoring">
+                        <div class="pool-row-card-seed">#${esc(seed)}</div>
+                        <div class="pool-row-card-name">${esc(f.name || ('Fencer ' + (r + 1)))}</div>
+                        <div class="pool-row-card-meta">${esc(rating)}<span class="sep">|</span>${esc(birth)}<span class="sep">|</span>${esc(mid)}<span class="sep">|</span>${esc(club)}</div>
+                    </div>
+                </td>`;
+            for (let c = 0; c < n; c++) {
+                if (r === c) {
+                    cells += `<td class="pool-scoreboard-bout-cell pool-scoreboard-bout-cell--blocked"><div class="pool-scoreboard-blocked" aria-label="No bout"></div></td>`;
+                    continue;
+                }
+                const sub = boutMap[Math.min(r, c) + '-' + Math.max(r, c)];
+                let val = '';
+                if (sub) {
+                    const isA = r < c;
+                    const my = isA ? sub.a_score : sub.b_score;
+                    const opp = isA ? sub.b_score : sub.a_score;
+                    const win = sub.victor_slot === r;
+                    val = (win && my <= opp ? 'V' : '') + my;
+                }
+                cells += `<td class="pool-scoreboard-bout-cell"><input type="text" class="score-input pool-scoreboard-input" inputmode="text" maxlength="3" data-row="${r}" data-col="${c}" value="${esc(val)}"></td>`;
+            }
+            cells += `<td class="pool-scoreboard-stat-cell" id="stat-v-${r}">0</td>`
+                + `<td class="pool-scoreboard-stat-cell" id="stat-ts-${r}">0</td>`
+                + `<td class="pool-scoreboard-stat-cell" id="stat-tr-${r}">0</td>`
+                + `<td class="pool-scoreboard-stat-cell" id="stat-ind-${r}">0</td>`;
+            return `<tr>${cells}</tr>`;
+        }).join('');
+
+        const title = SESSION.poolLabel || ('Pool '+((SESSION.poolIndex||0)+1));
+        const strip = SESSION.strip ? (' · '+esc(SESSION.strip)) : '';
+        stage.innerHTML = `
+            <div class="ref-content">
+            <div class="panel panel-cards-mode">
+                <div class="panel-header">
+                    <span class="pool-header-title">${esc(title)}${strip}</span>
+                    <span class="pool-header-referee">Referee: ${esc(SESSION.referee||'—')}</span>
+                </div>
+                <div class="panel-content panel-content-cards panel-content-pool-scoreboard">
+                    <div class="pool-scoreboard-shell" id="sb-shell">
+                        <div class="pool-cards-table-wrap" id="grid-scroll">
+                            <table class="pool-scoreboard-table">
+                                <thead><tr>${headerRow}</tr></thead>
+                                <tbody>${rows}</tbody>
+                            </table>
+                        </div>
+                        <div class="scroll-hint" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="pool-card-footer">
+                    <div class="pool-card-footer-left">${esc(SESSION.weapon||'')}</div>
+                    <div class="pool-card-footer-right">${n} fencers</div>
+                </div>
+            </div>
+            <div class="pool-widgets" id="ref-widgets"></div>
+            </div>`;
+
+        wireInputs();
+        wireScrollHint();
+        recompute();
+        renderWidgets();
+    }
+
+    function wireInputs(){
+        stage.querySelectorAll('.score-input').forEach(inp=>{
+            inp.addEventListener('input', ()=>{ inp.classList.remove('invalid'); formatScore(inp); recompute(); });
+            inp.addEventListener('change', ()=>{ const r=+inp.dataset.row, c=+inp.dataset.col; recompute(); renderWidgets(); maybeSubmit(r,c); });
+        });
+    }
+
+    /* ---- baked-in pool widgets (health rings + standings) ---- */
+    const ICON = {
+        activity: '<path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/>',
+        trend: '<path d="M14.828 14.828 21 21"/><path d="M21 16v5h-5"/><path d="m21 3-9 9-4-4-6 6"/><path d="M21 8V3h-5"/>',
+        crown: '<path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/>'
+    };
+    function svgIcon(inner, cls){ return `<svg class="${cls||''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`; }
+    function ringSvg(size, stroke, pct){
+        const r=(size-stroke)/2, circ=2*Math.PI*r, target=circ*(1-Math.max(0,Math.min(1,pct))), cx=size/2;
+        return `<svg class="pool-ring-svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true"><g transform="rotate(-90 ${cx} ${cx})"><circle class="pool-ring-track" cx="${cx}" cy="${cx}" r="${r.toFixed(2)}" fill="none" stroke-width="${stroke}"/><circle class="pool-ring-fill" cx="${cx}" cy="${cx}" r="${r.toFixed(2)}" fill="none" stroke-width="${stroke}" stroke-linecap="round" stroke-dasharray="${circ.toFixed(2)}" stroke-dashoffset="${target.toFixed(2)}"/></g></svg>`;
+    }
+    function computeCompletion(){
+        const n=ROSTER.length; const total=n*(n-1)/2; let done=0;
+        for(let r=0;r<n;r++) for(let c=r+1;c<n;c++){
+            const a=cellInput(r,c), b=cellInput(c,r);
+            if(a&&b&&a.value.trim()!==''&&b.value.trim()!=='') done++;
+        }
+        return { total, done, left:Math.max(0,total-done), pct: total>0?done/total:0 };
+    }
+    function computeStandings(){
+        const n=ROSTER.length;
+        const rows=ROSTER.map((f,r)=>{
+            let v=0, ts=0, tr=0, bf=0;
+            for(let c=0;c<n;c++){
+                if(r===c) continue;
+                const mine=cellInput(r,c), opp=cellInput(c,r);
+                const mv=mine?touches(mine.value):null, ov=opp?touches(opp.value):null;
+                if(mv!=null && ov!=null){ bf++; ts+=mv; tr+=ov; if(isV(mine.value)||(!isV(opp.value)&&mv>ov)) v++; }
+            }
+            return { r, name:f.name||('Fencer '+(r+1)), v, ind:ts-tr, ts, tr, bf, winPct: bf>0? v/bf : 0 };
+        });
+        rows.sort((a,b)=> b.winPct-a.winPct || b.v-a.v || b.ind-a.ind || b.ts-a.ts || a.r-b.r);
+        return rows;
+    }
+    function renderWidgets(){
+        const host=document.getElementById('ref-widgets'); if(!host) return;
+        const poolNo=(SESSION.poolIndex||0)+1;
+        const comp=computeCompletion();
+        const heroDone=comp.total>0 && comp.left===0;
+        const health=`<section class="pool-widget"><div class="pool-widget-head">${svgIcon(ICON.activity)}<span>Pool ${poolNo} Health</span></div><div class="pool-widget-body pool-health-body"><div class="pool-ring-hero">${ringSvg(150,15,comp.pct)}<div class="pool-ring-hero-center"><div class="pool-ring-hero-big ${heroDone?'pool-ring-hero-complete':''}">${comp.done}/${comp.left}</div><div class="pool-ring-hero-label">Bouts Completed</div></div></div></div></section>`;
+        const st=computeStandings(); const anyBouts=st.some(s=>s.bf>0);
+        const rows=st.slice(0,6).map((s,rank)=>{
+            const isLeader=rank===0&&anyBouts; const medal=rank<3?`pool-lb-rank-${rank+1}`:'';
+            const rankMark=isLeader? svgIcon(ICON.crown,'pool-lb-rank-crown') : String(rank+1);
+            const ind=s.ind>0?`+${s.ind}`:String(s.ind); const indCls=s.ind>0?'is-pos':(s.ind<0?'is-neg':'');
+            return `<li class="pool-lb-row${isLeader?' is-leader':''}"><span class="pool-lb-rank ${medal}">${rankMark}</span><span class="pool-lb-main"><span class="pool-lb-name">${esc(s.name)}</span></span><span class="pool-lb-stat pool-lb-v">${s.v}<small>V</small></span><span class="pool-lb-stat pool-lb-bouts">${s.bf}<small>B</small></span><span class="pool-lb-stat pool-lb-ind ${indCls}">${ind}</span></li>`;
+        }).join('');
+        const board=anyBouts?`<ol class="pool-leaderboard">${rows}</ol>`:`<p class="pool-lb-empty">Enter bout scores to see the leaders emerge.</p>`;
+        const standings=`<section class="pool-widget"><div class="pool-widget-head">${svgIcon(ICON.trend)}<span>Pool ${poolNo} Standings</span></div><div class="pool-widget-body${anyBouts?'':' pool-widget-body-empty'}">${board}</div></section>`;
+        host.innerHTML = health + standings;
+    }
+    function wireScrollHint(){
+        const wrap=document.getElementById('grid-scroll'); const shell=document.getElementById('sb-shell');
+        if(!wrap||!shell) return;
+        const upd=()=>{ const more = wrap.scrollWidth - wrap.clientWidth - wrap.scrollLeft > 8; shell.classList.toggle('can-scroll', more); };
+        wrap.addEventListener('scroll', upd, {passive:true});
+        window.addEventListener('resize', upd);
+        setTimeout(upd, 60);
+    }
+
+    /* ---- boot ---- */
+    async function load(){
+        if(!SESSION_ID || !TOKEN){ stateCard('Invalid link', 'This QR is missing its session or token.'); return; }
+        if(SUPABASE_URL.includes('YOUR-PROJECT')){ stateCard('Not configured yet', 'Set SUPABASE_URL and the anon key in this page before hosting.'); return; }
+        try{
+            const data = await rpc('session_get', { p_session_id:SESSION_ID, p_token:TOKEN });
+            SESSION = data || {};
+            ROSTER = Array.isArray(SESSION.roster) ? SESSION.roster.slice().sort((a,b)=>(a.slot||0)-(b.slot||0)) : [];
+            boutMap = {};
+            (SESSION.bouts||[]).forEach(b=>{ boutMap[b.a_slot+'-'+b.b_slot]=b; });
+            if(!ROSTER.length){ stateCard('Empty pool', 'No fencers were published for this pool yet.'); return; }
+            render();
+        }catch(err){
+            stateCard('Could not load pool', err.message || 'Check your connection and try again.');
+        }
+    }
+
+    /* ============================ Bout timer flow ============================ */
+    const BOUT_SECS = 180, TOUCH_CAP = 5;
+    let timerState = null;
+    let timerEl = null;
+    let pageMode = 'pools'; /* 'pools' | 'bout' */
+
+    const stageEl = document.getElementById('ref-stage');
+    const timerBtn = document.getElementById('timer-btn');
+    const dotSwitcher = document.getElementById('dot-switcher');
+
+    function syncPageChrome(){
+        if(dotSwitcher){
+            dotSwitcher.querySelectorAll('.ref-dot').forEach(dot=>{
+                const on = dot.dataset.page === pageMode;
+                dot.classList.toggle('active', on);
+                dot.setAttribute('aria-selected', on ? 'true' : 'false');
+            });
+        }
+        if(timerBtn) timerBtn.classList.toggle('is-active', pageMode === 'bout' && !!timerEl);
+        if(stageEl) stageEl.classList.toggle('is-hidden', pageMode === 'bout' && !!timerEl && !timerEl.classList.contains('is-parked'));
+    }
+
+    function setPage(mode){
+        if(mode !== 'pools' && mode !== 'bout') return;
+        pageMode = mode;
+        if(mode === 'pools'){
+            if(timerEl){
+                timerEl.classList.add('is-parked');
+                timerEl.classList.remove('open');
+            }
+            if(stageEl) stageEl.classList.remove('is-hidden');
+            syncPageChrome();
+            return;
+        }
+        /* bout page */
+        if(timerEl){
+            timerEl.classList.remove('is-parked');
+            timerEl.classList.add('open');
+            if(stageEl) stageEl.classList.add('is-hidden');
+            syncPageChrome();
+            return;
+        }
+        /* no active bout yet — pick first, land on bout once timer starts */
+        pageMode = 'pools';
+        syncPageChrome();
+        openBoutPicker();
+    }
+
+    if(dotSwitcher){
+        dotSwitcher.querySelectorAll('.ref-dot').forEach(dot=>{
+            dot.addEventListener('click', ()=> setPage(dot.dataset.page));
+        });
+    }
+
+    function showOverlay(el){ document.body.appendChild(el); requestAnimationFrame(()=> el.classList.add('open')); }
+    function closeOverlay(el){ el.classList.remove('open'); setTimeout(()=>{ if(el.parentNode) el.parentNode.removeChild(el); }, 220); }
+
+    function boutScored(i,j){ const a=cellInput(i,j), b=cellInput(j,i); return !!(a&&b&&a.value.trim()!==''&&b.value.trim()!==''); }
+    function fencerDone(i){ return ROSTER.every((_,j)=> j===i || boutScored(i,j)); }
+    function firstUnscoredBout(){ const n=ROSTER.length; for(let i=0;i<n;i++) for(let j=i+1;j<n;j++) if(!boutScored(i,j)) return {a:i,b:j}; return null; }
+    function leftOptions(){ return ROSTER.map((f,i)=>({i,name:f.name||('Fencer '+(i+1))})).filter(o=> !fencerDone(o.i)); }
+    function opponentOptions(a){ return ROSTER.map((f,j)=>({j,name:f.name||('Fencer '+(j+1))})).filter(o=> o.j!==a && !boutScored(a,o.j)); }
+
+    /* --- Step 1: pick who is fencing (only unscored pairings offered) --- */
+    function openBoutPicker(){
+        if(!ROSTER.length){ toast('Load a pool first', true); return; }
+        if(!leftOptions().length){ toast('All bouts recorded ✓'); pageMode='pools'; syncPageChrome(); return; }
+        const def = firstUnscoredBout();
+        const ov = document.createElement('div'); ov.className='ref-overlay';
+        ov.innerHTML = `
+            <div class="ref-overlay-back" data-close></div>
+            <div class="ref-sheet-wrap"><div class="ref-sheet">
+                <div class="ref-sheet-head"><span>Record a bout</span><span class="x" data-close>✕</span></div>
+                <div class="ref-sheet-body">
+                    <div class="bout-picker">
+                        <div class="bout-pick-col"><span class="bout-pick-label">Fencer</span><select class="bout-select" id="pick-a"></select></div>
+                        <span class="bout-pick-vs">vs</span>
+                        <div class="bout-pick-col"><span class="bout-pick-label">Opponent</span><select class="bout-select" id="pick-b"></select></div>
+                    </div>
+                    <div class="ref-btn-row">
+                        <button class="rbtn rbtn-ghost" data-close>Cancel</button>
+                        <button class="rbtn" id="pick-start">Start timer</button>
+                    </div>
+                </div>
+            </div></div>`;
+        const selA=ov.querySelector('#pick-a'), selB=ov.querySelector('#pick-b');
+        selA.innerHTML = leftOptions().map(o=>`<option value="${o.i}">${esc(o.name)}</option>`).join('');
+        function fillB(){
+            const a=+selA.value; const opps=opponentOptions(a);
+            selB.innerHTML = opps.map(o=>`<option value="${o.j}">${esc(o.name)}</option>`).join('');
+            if(def && def.a===a) selB.value=String(def.b);
+        }
+        if(def) selA.value=String(def.a);
+        fillB();
+        selA.addEventListener('change', fillB);
+        ov.querySelector('#pick-start').addEventListener('click', ()=>{
+            const a=+selA.value, b=+selB.value;
+            if(Number.isNaN(a)||Number.isNaN(b)||a===b){ toast('Pick two fencers', true); return; }
+            closeOverlay(ov); openTimer(a,b);
+        });
+        ov.querySelectorAll('[data-close]').forEach(x=> x.addEventListener('click', ()=>{
+            closeOverlay(ov);
+            if(!timerEl){ pageMode='pools'; syncPageChrome(); }
+        }));
+        showOverlay(ov);
+    }
+
+    /* --- Step 2: the bout timer (3:00 countdown, 5-touch cap) --- */
+    function openTimer(a,b){
+        if(timerEl){ closeTimer(timerEl, true); }
+        timerState = { a, b, sa:0, sb:0, secs:BOUT_SECS, running:false, tick:null };
+        const ov = document.createElement('div'); ov.className='ref-timer';
+        timerEl = ov;
+        const nameFor = (slot)=> esc(ROSTER[slot]?ROSTER[slot].name:'');
+        ov.innerHTML = `
+            <div class="ref-timer-top"><span class="x" data-abort>✕ Cancel</span><span>Pool ${(SESSION.poolIndex||0)+1}</span></div>
+            <div class="ref-timer-clock" id="tclock">3:00</div>
+            <div class="ref-timer-controls">
+                <button class="rbtn rbtn-ghost" id="t-reset">Reset</button>
+                <button class="rbtn" id="t-startpause" style="min-width:130px;">Start</button>
+            </div>
+            <div class="ref-fencers">
+                ${[a,b].map((slot,side)=>`
+                    <div class="ref-fencer">
+                        <div class="ref-fencer-name">${nameFor(slot)}</div>
+                        <div class="ref-fencer-score" id="tsc-${side}">0</div>
+                        <div class="ref-touch-btns">
+                            <button class="touch-btn minus" data-side="${side}" data-d="-1">−</button>
+                            <button class="touch-btn plus" data-side="${side}" data-d="1">+</button>
+                        </div>
+                    </div>`).join('')}
+            </div>
+            <div class="ref-timer-controls" style="padding-bottom:16px;">
+                <button class="rbtn rbtn-white" id="t-finish">Finish bout</button>
+            </div>`;
+        const clock = ov.querySelector('#tclock');
+        const fmt = (s)=> Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+        function paint(){
+            clock.textContent = fmt(timerState.secs);
+            clock.classList.toggle('warn', timerState.secs<=30 && timerState.secs>0);
+            clock.classList.toggle('done', timerState.secs===0);
+            ov.querySelector('#tsc-0').textContent = timerState.sa;
+            ov.querySelector('#tsc-1').textContent = timerState.sb;
+        }
+        function stop(){ timerState.running=false; if(timerState.tick){ clearInterval(timerState.tick); timerState.tick=null; } ov.querySelector('#t-startpause').textContent='Start'; }
+        function start(){ if(timerState.running||timerState.secs<=0) return; timerState.running=true; ov.querySelector('#t-startpause').textContent='Pause';
+            timerState.tick=setInterval(()=>{ timerState.secs--; if(timerState.secs<=0){ timerState.secs=0; stop(); } paint(); }, 1000); }
+        ov.querySelector('#t-startpause').addEventListener('click', ()=> timerState.running?stop():start());
+        ov.querySelector('#t-reset').addEventListener('click', ()=>{ stop(); timerState.secs=BOUT_SECS; paint(); });
+        ov.querySelectorAll('.touch-btn').forEach(btn=> btn.addEventListener('click', ()=>{
+            const side=+btn.dataset.side, d=+btn.dataset.d, key= side===0?'sa':'sb';
+            timerState[key]=Math.max(0, Math.min(TOUCH_CAP, timerState[key]+d)); paint();
+            if(timerState[key]===TOUCH_CAP) stop();
+        }));
+        ov.querySelector('#t-finish').addEventListener('click', ()=>{ stop(); openConfirm(ov, a, b, timerState.sa, timerState.sb); });
+        ov.querySelector('[data-abort]').addEventListener('click', ()=>{ stop(); closeTimer(ov); });
+        document.body.appendChild(ov);
+        pageMode = 'bout';
+        requestAnimationFrame(()=>{
+            ov.classList.add('open');
+            syncPageChrome();
+        });
+        paint();
+    }
+    function closeTimer(ov, silent){
+        const el = ov || timerEl;
+        if(!el) return;
+        if(timerState && timerState.tick){ clearInterval(timerState.tick); }
+        el.classList.remove('open');
+        el.classList.remove('is-parked');
+        setTimeout(()=>{ if(el.parentNode) el.parentNode.removeChild(el); }, 200);
+        if(timerEl === el) timerEl = null;
+        timerState = null;
+        if(!silent){
+            pageMode = 'pools';
+            if(stageEl) stageEl.classList.remove('is-hidden');
+            syncPageChrome();
+        }
+    }
+
+    /* --- Step 3: confirm + approve (submits the bout) --- */
+    function openConfirm(timerOv, a, b, sa, sb){
+        let victor = sa>sb ? a : (sb>sa ? b : null);
+        const ov = document.createElement('div'); ov.className='ref-overlay';
+        const nameA=esc(ROSTER[a]?ROSTER[a].name:''), nameB=esc(ROSTER[b]?ROSTER[b].name:'');
+        function render(){
+            const needPick = victor==null;
+            ov.innerHTML = `
+                <div class="ref-overlay-back" data-close></div>
+                <div class="ref-sheet-wrap"><div class="ref-sheet">
+                    <div class="ref-sheet-head"><span>Approve bout</span><span class="x" data-close>✕</span></div>
+                    <div class="ref-sheet-body">
+                        <div class="confirm-score">
+                            <div class="confirm-side ${victor===a?'win':''}"><span>${sa}</span><span class="nm">${nameA}</span></div>
+                            <span style="color:var(--text-light);">–</span>
+                            <div class="confirm-side ${victor===b?'win':''}"><span>${sb}</span><span class="nm">${nameB}</span></div>
+                        </div>
+                        ${needPick
+                            ? `<div class="confirm-hint">Tied — tap the winner (priority):</div><div class="winner-pick"><button class="rbtn rbtn-ghost" data-win="${a}">${nameA}</button><button class="rbtn rbtn-ghost" data-win="${b}">${nameB}</button></div>`
+                            : `<div class="confirm-hint"><strong>${victor===a?nameA:nameB}</strong> wins the bout.</div>`}
+                        <div class="ref-btn-row">
+                            <button class="rbtn rbtn-ghost" data-back>Back</button>
+                            <button class="rbtn rbtn-white" id="confirm-send" ${needPick?'disabled':''}>Approve &amp; send</button>
+                        </div>
+                    </div>
+                </div></div>`;
+            ov.querySelectorAll('[data-close],[data-back]').forEach(x=> x.addEventListener('click', ()=> closeOverlay(ov)));
+            ov.querySelectorAll('[data-win]').forEach(x=> x.addEventListener('click', ()=>{ victor=+x.dataset.win; render(); }));
+            const send=ov.querySelector('#confirm-send');
+            if(send) send.addEventListener('click', async ()=>{
+                send.disabled=true; send.textContent='Sending…';
+                const ok = await submitTimedBout(a,b,sa,sb,victor);
+                if(ok){ closeOverlay(ov); closeTimer(timerOv); toast('Bout recorded'); }
+                else { send.disabled=false; send.textContent='Approve & send'; }
+            });
+        }
+        render(); showOverlay(ov);
+    }
+
+    async function submitTimedBout(a,b,sa,sb,victor){
+        const A=Math.min(a,b), B=Math.max(a,b);
+        const aScore = (A===a)? sa : sb, bScore = (A===a)? sb : sa;
+        try{
+            await rpc('bout_submit', { p_session_id:SESSION_ID, p_token:TOKEN,
+                p_a_slot:A, p_b_slot:B, p_a_score:aScore, p_b_score:bScore, p_victor_slot:victor,
+                p_a_signature:'', p_b_signature:'', p_ref_name:(SESSION&&SESSION.referee)||'' });
+            const ai=cellInput(a,b), bi=cellInput(b,a);
+            if(ai) ai.value=(victor===a && sa<=sb ? 'V':'')+sa;
+            if(bi) bi.value=(victor===b && sb<=sa ? 'V':'')+sb;
+            recompute(); renderWidgets();
+            return true;
+        }catch(err){ toast('Send failed: '+(err.message||''), true); return false; }
+    }
+
+    timerBtn.addEventListener('click', ()=>{
+        if(timerEl && pageMode === 'bout'){
+            /* already on active bout — keep them there */
+            setPage('bout');
+            return;
+        }
+        if(timerEl){
+            setPage('bout');
+            return;
+        }
+        openBoutPicker();
+    });
+    syncPageChrome();
+    load();
+})();
+</script>
+</body>
+</html>
