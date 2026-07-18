@@ -92,12 +92,10 @@ body[data-vantage-background="gradient-balls"]{ background-color:#000 !important
     display:flex; align-items:center; justify-content:center;
     background:color-mix(in srgb, var(--text-main) 8%, transparent);
 }
-.seeding-pool-rail-icons{ margin-top:auto; display:flex; flex-direction:column; align-items:center; gap:6px; }
-.seeding-pool-rail-icons svg{ width:15px; height:15px; color:var(--text-light); stroke:var(--text-light); }
 .seeding-pool-main{ flex:1 1 auto; min-width:0; display:flex; flex-direction:column; }
 .panel-content{
     flex:1 1 auto;
-    padding: 4px 6px;
+    padding: 0;
     background: transparent;
     border-top: none;
     box-shadow: none;
@@ -105,200 +103,34 @@ body[data-vantage-background="gradient-balls"]{ background-color:#000 !important
     -webkit-backdrop-filter: none;
     border-radius: 0;
 }
-.panel-content-pool-scoreboard{
-    background: transparent;
-    padding: 4px 6px;
-    border-top: none;
-    box-shadow: none;
-}
 
-/* ── Pool scoreboard (same classes + rules as #pools-container desktop) ─────── */
-.pool-scoreboard-shell{
-    position:relative;
-    display:flex;
-    flex-direction:column;
-    min-height:0;
-    border-radius:0;
-    padding:2px 4px;
-    background:transparent;
-    border:0;
-    box-shadow:none;
-    overflow:hidden;
-}
-.pool-cards-table-wrap{
-    flex-grow:1;
-    min-height:0;
-    overflow-x:auto;
-    overflow-y:hidden;
-    background:transparent;
-    border:none;
-    box-shadow:none;
-}
-.pool-scoreboard-table{
-    --pool-control-size:26px;
-    --pool-row-gap-y:12.96px;
+/* ── Pool table — exactly the desktop's regular/spreadsheet mode (not
+   cards mode): plain table, no per-fencer card boxes, no header wash, no
+   gridlines — the rail-card's own glass shows straight through. ─────────── */
+.table-container{ overflow-x:auto; }
+table{
     width:100%;
-    min-width:0;
-    border-collapse:separate;
-    border-spacing:8.64px var(--pool-row-gap-y);
-    table-layout:fixed;
+    border-collapse:collapse;
     font-size:12px;
     color:var(--text-main);
     font-family:var(--font-ui);
+    font-weight:420;
 }
-.pool-scoreboard-table thead th{
+th, td{
+    padding:8px 12px;
     border:0;
-    background:linear-gradient(180deg,
-        color-mix(in srgb, var(--window-bg) 72%, #ffffff 28%) 0%,
-        color-mix(in srgb, var(--inset-bg) 84%, #ffffff 16%) 100%
-    );
-    color:var(--text-main);
-    text-align:center;
-    font-weight:var(--font-weight-display);
-    letter-spacing:0.01em;
-    text-shadow:0 1px 0 rgba(255, 255, 255, 0.35);
-    border-radius:4px;
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.38),
-        0 1px 3px rgba(0, 0, 0, 0.05);
-    font-size:11.25px;
-    padding:4px 4px;
-}
-.pool-scoreboard-table thead th.pool-scoreboard-fencer-head{
+    background:transparent;
     text-align:left;
-    width:140px;
-    padding-left:4px;
-    padding-right:4px;
     white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
 }
-.pool-scoreboard-table thead th.pool-scoreboard-bout-head{
-    width:26px;
-    padding-left:1px;
-    padding-right:1px;
-    font-size:11px;
-    max-width:26px;
-    min-width:0;
-    overflow:hidden;
-    text-overflow:clip;
-}
-.pool-scoreboard-table thead th.pool-scoreboard-stat-head{
-    width:26px;
-    padding-left:1px;
-    padding-right:1px;
-    font-size:11px;
-    max-width:26px;
-    min-width:0;
-    overflow:hidden;
-    text-overflow:clip;
-}
-.pool-scoreboard-table tbody tr:nth-child(even) td{ background:transparent; }
-.pool-scoreboard-table tbody tr td{
-    border:0;
-    padding:0;
-    vertical-align:middle;
-    line-height:1.05;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-}
-.pool-scoreboard-table tbody tr td:last-child{ padding-right:0; }
-.pool-scoreboard-fencer-cell{
-    width:140px;
-    padding-top:0;
-    padding-bottom:0;
-}
-.pool-row-card{
-    position:relative;
-    padding:8px 12px 5px;
-    border-radius:var(--canvas-viewbox-radius, 10px);
-    border:1px solid color-mix(in srgb, var(--header-text) 14%, transparent);
-    background:linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--inset-bg) 66%, transparent) 0%,
-        color-mix(in srgb, var(--window-bg) 58%, transparent) 100%
-    );
-    backdrop-filter:blur(12px) saturate(1.04);
-    -webkit-backdrop-filter:blur(12px) saturate(1.04);
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.12),
-        0 6px 18px rgba(0, 0, 0, 0.14);
-    min-height:0;
-    color:var(--header-text);
-    text-shadow:0 1px 1px rgba(0, 0, 0, 0.35);
-    overflow:hidden;
-}
-.pool-row-card::before{
-    content:'';
-    position:absolute;
-    inset:0 auto 0 0;
-    width:4px;
-    background:linear-gradient(180deg,
-        color-mix(in srgb, var(--btn-aqua-top) 70%, #ffffff 30%) 0%,
-        color-mix(in srgb, var(--btn-aqua-bot) 76%, #000000 24%) 100%
-    );
-    opacity:0.86;
-    pointer-events:none;
-}
-.pool-row-card--scoring{
-    min-height:0;
-    padding:8px 12px 5px;
-}
-.pool-row-card-seed{
-    position:absolute;
-    top:6px;
-    right:8px;
-    font-size:11px;
-    font-weight:var(--font-weight-display);
-    color:color-mix(in srgb, var(--header-text) 84%, var(--text-main) 16%);
-    background:color-mix(in srgb, var(--window-bg) 42%, transparent);
-    border:1px solid color-mix(in srgb, var(--header-text) 16%, transparent);
-    border-radius:999px;
-    padding:1px 7px;
-    box-shadow:0 1px 2px rgba(0,0,0,0.08);
-}
-.pool-row-card-name{
-    font-size:14px;
+th{
     font-weight:var(--font-weight-heading);
-    line-height:1.2;
-    margin-bottom:4px;
-    padding-right:44px;
-    word-break:break-word;
-    letter-spacing:0.01em;
-}
-.pool-row-card-meta{
-    font-size:11px;
-    color:color-mix(in srgb, var(--header-text) 84%, var(--text-main) 16%);
-    font-weight:var(--font-weight-heading);
-    line-height:1.12;
-    display:flex;
-    flex-wrap:wrap;
-    align-items:center;
-    gap:0 6px;
-    word-break:break-word;
-    margin-bottom:0;
-    letter-spacing:0.01em;
-}
-.pool-row-card-meta .sep{ opacity:0.55; }
-.pool-scoreboard-bout-cell{
-    width:var(--pool-control-size);
-    max-width:var(--pool-control-size);
-    min-width:0;
-    text-align:center;
-    padding:0 1px;
-    overflow:hidden;
-}
-.pool-scoreboard-stat-cell{
-    width:var(--pool-control-size);
-    max-width:var(--pool-control-size);
-    min-width:0;
-    text-align:center;
-    font-weight:var(--font-weight-display);
-    font-size:11.25px;
     color:var(--text-main);
-    text-shadow:0 1px 0 rgba(255, 255, 255, 0.28);
-    overflow:hidden;
+}
+.pool-name-cell{ font-weight:var(--font-weight-heading); }
+.blacked-out{
+    background:repeating-linear-gradient(45deg,#aaa,#aaa 5px,#999 5px,#999 10px);
+    box-shadow:inset 0 2px 4px rgba(0,0,0,0.2);
 }
 input[type="text"],
 .score-input{
@@ -325,51 +157,10 @@ input[type="text"]:focus,
     font-weight:var(--font-weight-heading);
     font-size:13px;
 }
-.pool-scoreboard-input{
-    width:var(--pool-control-size);
-    min-height:var(--pool-control-size);
-    height:var(--pool-control-size);
-    padding:1px 0;
-    border-radius:6px;
-    text-align:center;
-    font-weight:var(--font-weight-heading);
-    font-size:12px;
-    font-family:var(--font-ui);
-}
-.score-input.invalid,
-.pool-scoreboard-input.invalid{
+.score-input.invalid{
     outline:2px solid var(--danger);
     box-shadow:0 0 6px rgba(239,68,68,0.15);
 }
-.pool-scoreboard-blocked{
-    width:100%;
-    max-width:var(--pool-control-size);
-    height:var(--pool-control-size);
-    margin:0 auto;
-    border-radius:6px;
-    background:
-        repeating-linear-gradient(45deg,
-            color-mix(in srgb, var(--text-light) 40%, var(--window-bg) 60%) 0 5px,
-            color-mix(in srgb, var(--text-light) 30%, var(--inset-bg) 70%) 5px 10px
-        );
-    border:1px solid color-mix(in srgb, var(--text-light) 34%, var(--window-bg) 66%);
-    box-shadow:
-        inset 0 2px 4px rgba(0, 0, 0, 0.16),
-        inset 0 1px 0 rgba(255, 255, 255, 0.28);
-    opacity:0.72;
-}
-
-/* ── Horizontal-scroll affordance ("there's more to the right") ─────────────── */
-.scroll-hint{
-    position:absolute; top:1px; right:1px; bottom:1px; width:52px; pointer-events:none; z-index:2;
-    display:flex; align-items:center; justify-content:flex-end; padding-right:6px; border-radius:0 var(--canvas-viewbox-radius) var(--canvas-viewbox-radius) 0;
-    background:linear-gradient(90deg, transparent, color-mix(in srgb, var(--inset-bg) 94%, transparent));
-    opacity:0; transition:opacity .22s ease;
-}
-.pool-scoreboard-shell.can-scroll .scroll-hint{ opacity:1; }
-.scroll-hint svg{ width:22px; height:22px; color:var(--text-main); filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5)); animation:nudge 1.15s ease-in-out infinite; }
-@keyframes nudge{ 0%,100%{ transform:translateX(0); } 50%{ transform:translateX(4px); } }
-@media (prefers-reduced-motion: reduce){ .scroll-hint svg{ animation:none; } }
 
 /* ── App footer: soft black fade + white desktop pool-dot switcher ──────────── */
 .ref-footer{
@@ -698,30 +489,24 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
     }
     function shortName(n){ const p=String(n||'').trim().split(/\s+/); return p.length>1? (p[0][0]+'. '+p[p.length-1]) : (p[0]||''); }
 
-    /* ---- render the pool card ---- */
+    /* ---- render the pool card — the desktop's regular/spreadsheet table,
+       not cards mode: plain columns, no per-fencer card boxes. ---- */
     function render(){
         const n = ROSTER.length;
-        let headerRow = '<th class="pool-scoreboard-fencer-head">Fencer</th>';
-        ROSTER.forEach((_, i) => { headerRow += `<th class="pool-scoreboard-bout-head" aria-label="Bout ${i + 1}">${i + 1}</th>`; });
-        headerRow += '<th class="pool-scoreboard-stat-head">V</th><th class="pool-scoreboard-stat-head">TS</th><th class="pool-scoreboard-stat-head">TR</th><th class="pool-scoreboard-stat-head">Ind</th>';
+        let headerRow = '<th style="width:38px;text-align:center;">#</th><th style="width:22.5%;">Name</th><th>Club</th><th>Rating</th>';
+        ROSTER.forEach((_, i) => { headerRow += `<th style="width:38px;text-align:center;">${i + 1}</th>`; });
+        headerRow += '<th style="width:40px;text-align:center;">V</th><th style="width:40px;text-align:center;">Ind</th><th style="width:40px;text-align:center;">TS</th><th style="width:40px;text-align:center;">TR</th>';
 
         const rows = ROSTER.map((f, r) => {
             const seed = f.seed != null ? f.seed : (r + 1);
             const rating = f.rating || 'U';
-            const birth = f.birthYear || f.birth_year || '--';
-            const mid = f.memberId || f.member_id || f.usfaId || '--';
             const club = f.club || 'UNAT';
-            let cells = `
-                <td class="pool-scoreboard-fencer-cell">
-                    <div class="pool-row-card pool-row-card--scoring">
-                        <div class="pool-row-card-seed">#${esc(seed)}</div>
-                        <div class="pool-row-card-name">${esc(f.name || ('Fencer ' + (r + 1)))}</div>
-                        <div class="pool-row-card-meta">${esc(rating)}<span class="sep">|</span>${esc(birth)}<span class="sep">|</span>${esc(mid)}<span class="sep">|</span>${esc(club)}</div>
-                    </div>
-                </td>`;
+            let cells = `<td style="text-align:center;">${esc(seed)}</td>`
+                + `<td class="pool-name-cell">${esc(f.name || ('Fencer ' + (r + 1)))}</td>`
+                + `<td>${esc(club)}</td><td>${esc(rating)}</td>`;
             for (let c = 0; c < n; c++) {
                 if (r === c) {
-                    cells += `<td class="pool-scoreboard-bout-cell pool-scoreboard-bout-cell--blocked"><div class="pool-scoreboard-blocked" aria-label="No bout"></div></td>`;
+                    cells += `<td class="blacked-out" aria-label="No bout"></td>`;
                     continue;
                 }
                 const sub = boutMap[Math.min(r, c) + '-' + Math.max(r, c)];
@@ -733,12 +518,12 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
                     const win = sub.victor_slot === r;
                     val = (win && my <= opp ? 'V' : '') + my;
                 }
-                cells += `<td class="pool-scoreboard-bout-cell"><input type="text" class="score-input pool-scoreboard-input" inputmode="text" maxlength="3" data-row="${r}" data-col="${c}" value="${esc(val)}"></td>`;
+                cells += `<td><input type="text" class="score-input" inputmode="text" maxlength="3" data-row="${r}" data-col="${c}" value="${esc(val)}"></td>`;
             }
-            cells += `<td class="pool-scoreboard-stat-cell" id="stat-v-${r}">0</td>`
-                + `<td class="pool-scoreboard-stat-cell" id="stat-ts-${r}">0</td>`
-                + `<td class="pool-scoreboard-stat-cell" id="stat-tr-${r}">0</td>`
-                + `<td class="pool-scoreboard-stat-cell" id="stat-ind-${r}">0</td>`;
+            cells += `<td style="text-align:center;" id="stat-v-${r}">0</td>`
+                + `<td style="text-align:center;" id="stat-ind-${r}">0</td>`
+                + `<td style="text-align:center;" id="stat-ts-${r}">0</td>`
+                + `<td style="text-align:center;" id="stat-tr-${r}">0</td>`;
             return `<tr>${cells}</tr>`;
         }).join('');
 
@@ -754,23 +539,18 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
                 <span class="sep">·</span><span>${n} fencer${n===1?'':'s'}</span>
                 <span class="sep">·</span><span>Referee: ${esc(SESSION.referee||'—')}</span>
             </div>
-            <div class="panel panel-cards-mode">
+            <div class="panel">
                 <div class="seeding-pool-rail">
                     <span class="seeding-pool-rail-num" title="Pool ${poolNo}">P${poolNo}</span>
                     <span class="seeding-strip-trigger" title="Strip">${esc(stripLabel)}</span>
                 </div>
                 <div class="seeding-pool-main">
-                    <div class="panel-content panel-content-cards panel-content-pool-scoreboard">
-                        <div class="pool-scoreboard-shell" id="sb-shell">
-                            <div class="pool-cards-table-wrap" id="grid-scroll">
-                                <table class="pool-scoreboard-table">
-                                    <thead><tr>${headerRow}</tr></thead>
-                                    <tbody>${rows}</tbody>
-                                </table>
-                            </div>
-                            <div class="scroll-hint" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
-                            </div>
+                    <div class="panel-content">
+                        <div class="table-container">
+                            <table>
+                                <thead><tr>${headerRow}</tr></thead>
+                                <tbody>${rows}</tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -779,7 +559,6 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
             </div>`;
 
         wireInputs();
-        wireScrollHint();
         recompute();
         renderWidgets();
     }
@@ -842,15 +621,6 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
         const standings=`<section class="pool-widget pool-widget-leaderboard"><div class="pool-widget-rail"><div class="pool-widget-rail-icons">${svgIcon(ICON.trend)}</div><span class="pool-widget-rail-label">Pool ${poolNo} Standings</span></div><div class="pool-widget-main"><div class="pool-widget-body${anyBouts?'':' pool-widget-body-empty'}">${board}</div></div></section>`;
         host.innerHTML = health + standings;
     }
-    function wireScrollHint(){
-        const wrap=document.getElementById('grid-scroll'); const shell=document.getElementById('sb-shell');
-        if(!wrap||!shell) return;
-        const upd=()=>{ const more = wrap.scrollWidth - wrap.clientWidth - wrap.scrollLeft > 8; shell.classList.toggle('can-scroll', more); };
-        wrap.addEventListener('scroll', upd, {passive:true});
-        window.addEventListener('resize', upd);
-        setTimeout(upd, 60);
-    }
-
     /* ---- boot ---- */
     async function load(){
         if(!SESSION_ID || !TOKEN){ stateCard('Invalid link', 'This QR is missing its session or token.'); return; }
