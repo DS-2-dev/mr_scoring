@@ -33,6 +33,15 @@
     --canvas-toolbar-blur: blur(15px);
     --canvas-toolbar-inset-shadow: none;
     --viewbox-body-card-blur: blur(100px);
+    /* Neutral/selected material — same derivation as the desktop's Omens
+       modal-action recipe (main-4.css): --text-main tinted over --inset-bg,
+       so ghost buttons and cards track the theme instead of hardcoded greys. */
+    --neutral-surface: color-mix(in srgb, var(--text-main) 5%, var(--inset-bg));
+    --neutral-surface-hover: color-mix(in srgb, var(--text-main) 9%, var(--inset-bg));
+    --neutral-surface-press: color-mix(in srgb, var(--text-main) 3%, var(--inset-bg));
+    --neutral-border: color-mix(in srgb, var(--text-main) 12%, transparent);
+    --selected-surface: #ffffff;
+    --selected-fg: #1a1a1a;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;}
@@ -279,27 +288,47 @@ input[type="text"]:focus,
 .ref-overlay.open{ opacity:1; pointer-events:auto; }
 .ref-overlay-back{ position:absolute; inset:0; background:rgba(0,0,0,0.6); }
 .ref-sheet-wrap{ position:relative; margin-top:auto; width:100%; display:flex; justify-content:center; }
-.ref-sheet{ position:relative; width:100%; max-width:520px; background:var(--window-bg); border:1px solid #999; border-bottom:0; border-radius:18px 18px 0 0; box-shadow:0 -14px 44px rgba(0,0,0,0.5); transform:translateY(30px); transition:transform .22s ease; padding-bottom:calc(16px + env(safe-area-inset-bottom)); overflow:hidden; }
+.ref-sheet{
+    position:relative; width:100%; max-width:520px;
+    background: var(--canvas-toolbar-bg);
+    backdrop-filter: var(--canvas-toolbar-blur);
+    -webkit-backdrop-filter: var(--canvas-toolbar-blur);
+    border: 1px solid var(--canvas-toolbar-border);
+    border-bottom: none;
+    border-radius:18px 18px 0 0;
+    box-shadow:0 -14px 44px rgba(0,0,0,0.35);
+    transform:translateY(30px); transition:transform .22s ease;
+    padding-bottom:calc(16px + env(safe-area-inset-bottom)); overflow:hidden;
+}
 .ref-overlay.open .ref-sheet{ transform:translateY(0); }
-.ref-sheet-head{ background:linear-gradient(180deg,var(--metal-top) 0%,var(--metal-bottom) 100%); border-bottom:1px solid #888; padding:12px 16px; color:var(--header-text); font-weight:var(--font-weight-heading); font-size:14px; text-shadow:0 1px 0 rgba(255,255,255,0.25); display:flex; align-items:center; justify-content:space-between; }
-.ref-sheet-head .x{ cursor:pointer; opacity:0.8; font-size:16px; }
+.ref-sheet-head{ background:transparent; padding:14px 18px 8px; color:var(--text-main); font-weight:var(--font-weight-heading); font-size:14px; display:flex; align-items:center; justify-content:space-between; }
+.ref-sheet-head .x{ cursor:pointer; opacity:0.6; font-size:15px; transition:opacity .15s ease; }
+.ref-sheet-head .x:hover{ opacity:1; }
 .ref-sheet-body{ padding:16px; }
 .bout-picker{ display:flex; align-items:flex-start; gap:10px; }
 .bout-pick-col{ flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:6px; }
 .bout-pick-label{ font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-light); font-weight:var(--font-weight-heading); text-align:center; }
 .bout-pick-vs{ align-self:center; color:var(--text-light); font-weight:800; font-size:13px; padding-top:26px; }
-.bout-select{ width:100%; font-family:var(--font-ui); font-size:14px; color:var(--text-main); background:var(--inset-bg); border:1px solid #aaa; border-radius:10px; padding:11px 12px; -webkit-appearance:none; appearance:none; }
+.bout-select{ width:100%; font-family:var(--font-ui); font-size:14px; color:var(--text-main); background:var(--neutral-surface); border:1px solid var(--neutral-border); border-radius:10px; padding:11px 12px; -webkit-appearance:none; appearance:none; }
 .bout-select:disabled{ opacity:0.5; }
 .ref-btn-row{ display:flex; gap:10px; margin-top:16px; }
-.rbtn{ flex:1 1 0; padding:12px 16px; border-radius:12px; font-family:var(--font-ui); font-size:14px; font-weight:var(--font-weight-heading); border:1px solid color-mix(in srgb,#fff 14%,transparent); color:var(--header-text); cursor:pointer; background:linear-gradient(180deg, color-mix(in srgb,var(--btn-aqua-top) 92%, #fff 8%), color-mix(in srgb,var(--btn-aqua-bot) 90%, #000 10%)); box-shadow:inset 0 1px 0 rgba(255,255,255,0.16); }
-.rbtn:active{ transform:translateY(1px); }
-.rbtn-ghost{ background:var(--inset-bg); color:var(--text-main); border:1px solid #888; box-shadow:none; }
-.rbtn-white{ background:linear-gradient(180deg,#fdfdfd,#e0e0e0); color:#111; border:1px solid #ccc; }
+.rbtn{ flex:1 1 0; padding:12px 16px; border-radius:12px; font-family:var(--font-ui); font-size:14px; font-weight:var(--font-weight-heading); border:none; color:var(--selected-fg); cursor:pointer; background:var(--selected-surface); box-shadow:none; transition:background .15s ease; }
+.rbtn:hover{ background:#efefef; }
+.rbtn:active{ background:#d8d8d8; transform:translateY(1px); }
+.rbtn-ghost{ background:var(--neutral-surface); color:var(--text-main); border:none; box-shadow:none; }
+.rbtn-ghost:hover{ background:var(--neutral-surface-hover); }
+.rbtn-ghost:active{ background:var(--neutral-surface-press); }
+.rbtn-white{ background:var(--selected-surface); color:var(--selected-fg); border:none; }
+.rbtn-white:hover{ background:#efefef; }
+.rbtn-white:active{ background:#d8d8d8; }
 .rbtn:disabled{ opacity:0.45; }
-/* full-screen timer — sits above stage, below footer chrome */
+/* full-screen timer — sits above stage, below footer chrome. Flat glass
+   coat (same GIC recipe as every other card/sheet), no gradient wash. */
 .ref-timer{
     position:fixed; inset:0; z-index:50;
-    background:linear-gradient(180deg, rgba(6,7,10,0.94), rgba(6,7,10,0.98));
+    background: color-mix(in srgb, var(--window-bg) 88%, transparent);
+    backdrop-filter: blur(28px) saturate(1.08);
+    -webkit-backdrop-filter: blur(28px) saturate(1.08);
     display:flex; flex-direction:column;
     opacity:0; pointer-events:none; transition:opacity .2s ease;
     padding:env(safe-area-inset-top) 0 calc(72px + env(safe-area-inset-bottom));
@@ -309,20 +338,50 @@ input[type="text"]:focus,
 .ref-stage.is-hidden{ display:none; }
 .ref-timer-top{ display:flex; align-items:center; justify-content:space-between; padding:14px 18px; color:var(--text-light); font-size:13px; font-weight:var(--font-weight-heading); }
 .ref-timer-top .x{ cursor:pointer; }
-.ref-timer-clock{ font-family:'Scoreboard60s',var(--font-ui),monospace; font-weight:800; font-size:clamp(64px,20vw,116px); line-height:1; text-align:center; color:var(--text-main); font-variant-numeric:tabular-nums; letter-spacing:2px; margin:2px 0; }
+.ref-timer-main{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
+.ref-timer-center{ flex:0 0 auto; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.ref-timer-clock{ font-family:var(--font-scoreboard); letter-spacing:var(--scoreboard-tracking); font-weight:800; font-size:clamp(64px,20vw,116px); line-height:1; text-align:center; color:var(--text-main); font-variant-numeric:tabular-nums; margin:2px 0; }
 .ref-timer-clock.warn{ color:#ffce5a; } .ref-timer-clock.done{ color:var(--danger); }
 .ref-timer-controls{ display:flex; gap:12px; justify-content:center; padding:8px 18px; }
 .ref-timer-controls .rbtn{ flex:0 0 auto; }
 .ref-fencers{ flex:1 1 auto; display:flex; gap:12px; padding:10px 16px; min-height:0; }
-.ref-fencer{ flex:1 1 0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; border-radius:16px; border:1px solid #444; background:linear-gradient(180deg, color-mix(in srgb,var(--inset-bg) 92%, #000 8%), var(--window-bg)); padding:18px 10px; min-width:0; }
+.ref-fencer{
+    flex:1 1 0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+    border-radius:16px;
+    background: var(--canvas-toolbar-bg);
+    backdrop-filter: var(--viewbox-body-card-blur);
+    -webkit-backdrop-filter: var(--viewbox-body-card-blur);
+    border: 1px solid var(--canvas-toolbar-border);
+    padding:18px 10px; min-width:0;
+}
+.ref-fencer.is-leading .ref-fencer-score{ color:#ffd873; }
 .ref-fencer-name{ font-size:15px; font-weight:var(--font-weight-heading); color:var(--text-main); text-align:center; word-break:break-word; }
-.ref-fencer-score{ font-family:'Scoreboard60s',var(--font-ui),monospace; font-weight:800; font-size:76px; line-height:1; color:var(--text-main); }
+.ref-fencer-score{ font-family:var(--font-scoreboard); letter-spacing:var(--scoreboard-tracking); font-weight:800; font-size:76px; line-height:1; color:var(--text-main); transition:color .15s ease; }
 .ref-touch-btns{ display:flex; gap:10px; align-items:center; }
-.touch-btn{ width:54px; height:54px; border-radius:14px; font-size:28px; font-weight:800; display:flex; align-items:center; justify-content:center; border:1px solid #666; background:var(--inset-bg); color:var(--text-main); cursor:pointer; }
-.touch-btn.plus{ width:76px; background:linear-gradient(180deg,var(--btn-aqua-top),var(--btn-aqua-bot)); color:#fff; border-color:#777; }
+.touch-btn{ width:54px; height:54px; border-radius:14px; font-size:28px; font-weight:800; display:flex; align-items:center; justify-content:center; border:none; background:var(--neutral-surface); color:var(--text-main); cursor:pointer; transition:background .15s ease; }
+.touch-btn:hover{ background:var(--neutral-surface-hover); }
+.touch-btn.plus{ width:76px; background:var(--selected-surface); color:var(--selected-fg); }
+.touch-btn.plus:hover{ background:#efefef; }
 .touch-btn:active{ transform:translateY(1px); }
+/* Landscape phones: short viewport height, plenty of width — put the
+   clock/controls beside the fencers instead of stacking everything, so
+   nothing gets cramped or scrolls under the footer. */
+@media (orientation:landscape) and (max-height:560px){
+    .ref-timer{ padding-bottom:calc(58px + env(safe-area-inset-bottom)); }
+    .ref-timer-top{ padding:8px 16px; }
+    .ref-timer-main{ flex-direction:row; align-items:stretch; gap:14px; padding:0 14px; }
+    .ref-timer-center{ flex:0 0 200px; gap:6px; }
+    .ref-timer-clock{ font-size:clamp(40px,8vw,60px); }
+    .ref-timer-controls{ padding:4px 0; }
+    .ref-fencers{ padding:0; }
+    .ref-fencer{ padding:10px 8px; gap:8px; }
+    .ref-fencer-name{ font-size:12.5px; }
+    .ref-fencer-score{ font-size:44px; }
+    .touch-btn{ width:44px; height:44px; font-size:22px; border-radius:11px; }
+    .touch-btn.plus{ width:60px; }
+}
 /* confirm */
-.confirm-score{ display:flex; align-items:flex-start; justify-content:center; gap:16px; font-family:'Scoreboard60s',var(--font-ui),monospace; font-size:46px; font-weight:800; color:var(--text-main); margin:8px 0 2px; }
+.confirm-score{ display:flex; align-items:flex-start; justify-content:center; gap:16px; font-family:var(--font-scoreboard); letter-spacing:var(--scoreboard-tracking); font-size:46px; font-weight:800; color:var(--text-main); margin:8px 0 2px; }
 .confirm-side{ display:flex; flex-direction:column; align-items:center; gap:3px; }
 .confirm-side .nm{ font-family:var(--font-ui); font-size:12.5px; color:var(--text-light); font-weight:var(--font-weight-heading); max-width:120px; text-align:center; }
 .confirm-side.win{ color:#ffd873; } .confirm-side.win .nm{ color:#ffd873; }
@@ -754,21 +813,25 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
         const nameFor = (slot)=> esc(ROSTER[slot]?ROSTER[slot].name:'');
         ov.innerHTML = `
             <div class="ref-timer-top"><span class="x" data-abort>✕ Cancel</span><span>Pool ${(SESSION.poolIndex||0)+1}</span></div>
-            <div class="ref-timer-clock" id="tclock">3:00</div>
-            <div class="ref-timer-controls">
-                <button class="rbtn rbtn-ghost" id="t-reset">Reset</button>
-                <button class="rbtn" id="t-startpause" style="min-width:130px;">Start</button>
-            </div>
-            <div class="ref-fencers">
-                ${[a,b].map((slot,side)=>`
-                    <div class="ref-fencer">
-                        <div class="ref-fencer-name">${nameFor(slot)}</div>
-                        <div class="ref-fencer-score" id="tsc-${side}">0</div>
-                        <div class="ref-touch-btns">
-                            <button class="touch-btn minus" data-side="${side}" data-d="-1">−</button>
-                            <button class="touch-btn plus" data-side="${side}" data-d="1">+</button>
-                        </div>
-                    </div>`).join('')}
+            <div class="ref-timer-main">
+                <div class="ref-timer-center">
+                    <div class="ref-timer-clock" id="tclock">3:00</div>
+                    <div class="ref-timer-controls">
+                        <button class="rbtn rbtn-ghost" id="t-reset">Reset</button>
+                        <button class="rbtn" id="t-startpause" style="min-width:130px;">Start</button>
+                    </div>
+                </div>
+                <div class="ref-fencers">
+                    ${[a,b].map((slot,side)=>`
+                        <div class="ref-fencer" id="tfencer-${side}">
+                            <div class="ref-fencer-name">${nameFor(slot)}</div>
+                            <div class="ref-fencer-score" id="tsc-${side}">0</div>
+                            <div class="ref-touch-btns">
+                                <button class="touch-btn minus" data-side="${side}" data-d="-1">−</button>
+                                <button class="touch-btn plus" data-side="${side}" data-d="1">+</button>
+                            </div>
+                        </div>`).join('')}
+                </div>
             </div>
             <div class="ref-timer-controls" style="padding-bottom:16px;">
                 <button class="rbtn rbtn-white" id="t-finish">Finish bout</button>
@@ -781,6 +844,8 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
             clock.classList.toggle('done', timerState.secs===0);
             ov.querySelector('#tsc-0').textContent = timerState.sa;
             ov.querySelector('#tsc-1').textContent = timerState.sb;
+            ov.querySelector('#tfencer-0').classList.toggle('is-leading', timerState.sa>timerState.sb);
+            ov.querySelector('#tfencer-1').classList.toggle('is-leading', timerState.sb>timerState.sa);
         }
         function stop(){ timerState.running=false; if(timerState.tick){ clearInterval(timerState.tick); timerState.tick=null; } ov.querySelector('#t-startpause').textContent='Start'; }
         function start(){ if(timerState.running||timerState.secs<=0) return; timerState.running=true; ov.querySelector('#t-startpause').textContent='Pause';
