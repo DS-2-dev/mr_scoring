@@ -52,10 +52,11 @@ body{
     overscroll-behavior:none;
 }
 
-/* ── Background (Vantage gradient-balls WebGL, same as the app) ──────────────── */
-body[data-vantage-background="gradient-balls"]{ background-color:#000 !important; background-image:none !important; }
-.vantage-background{ position:fixed; inset:0; width:100%; height:100%; z-index:0; pointer-events:none; overflow:hidden; background-color:#000; }
-.vantage-background__balls,.vantage-background__canvas{ width:100%; height:100%; display:block; }
+/* ── Background: Onyx Smoke static image (replaces the old gradient-balls
+   WebGL animation) ───────────────────────────────────────────────────────── */
+body[data-vantage-background="onyx-smoke"]{
+    background:#000 url('./assets/onyx-smoke.jpg') center/cover fixed no-repeat;
+}
 
 /* ── App shell: pool floats on top, footer pinned ───────────────────────────── */
 .ref-app{ position:relative; z-index:1; min-height:100dvh; display:flex; flex-direction:column; padding-bottom:calc(72px + env(safe-area-inset-bottom)); }
@@ -363,23 +364,30 @@ input[type="text"]:focus,
 .touch-btn.plus{ width:76px; background:var(--selected-surface); color:var(--selected-fg); }
 .touch-btn.plus:hover{ background:#efefef; }
 .touch-btn:active{ transform:translateY(1px); }
-/* Landscape phones: short viewport height, plenty of width — put the
-   clock/controls beside the fencers instead of stacking everything, so
-   nothing gets cramped or scrolls under the footer. */
+/* Landscape phones: short viewport height, plenty of width — timer sits
+   dead center with a fencer card flanking each side, colored like a real
+   fencing scoring box (left = red, right = green). .ref-fencers is
+   flattened with display:contents so its two cards become direct flex
+   items of .ref-timer-main, sitting either side of the centered clock. */
 @media (orientation:landscape) and (max-height:560px){
     .ref-timer{ padding-bottom:calc(58px + env(safe-area-inset-bottom)); }
     .ref-timer-top{ padding:8px 16px; }
     .ref-timer-main{ flex-direction:row; align-items:stretch; gap:14px; padding:0 14px; }
-    .ref-timer-center{ flex:0 0 200px; gap:6px; }
+    .ref-timer-center{ order:2; flex:0 0 200px; gap:6px; }
     .ref-timer-clock{ font-size:clamp(40px,8vw,60px); }
     .ref-timer-controls{ padding:4px 0; }
-    .ref-fencers{ padding:0; }
-    .ref-fencer{ padding:10px 8px; gap:8px; }
+    .ref-fencers{ display:contents; }
+    .ref-fencer{ padding:10px 8px; gap:8px; border-width:2px; }
+    #tfencer-0{ order:1; border-color:var(--danger); }
+    #tfencer-1{ order:3; border-color:var(--success); }
     .ref-fencer-name{ font-size:12.5px; }
     .ref-fencer-score{ font-size:44px; }
     .touch-btn{ width:44px; height:44px; font-size:22px; border-radius:11px; }
     .touch-btn.plus{ width:60px; }
 }
+/* post-completion lock: the terminal "thank you" screen replaces the whole body */
+.ref-locked{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; padding:24px; text-align:center; }
+.ref-locked-msg{ font-family:var(--font-ui); font-size:22px; font-weight:var(--font-weight-heading); color:var(--text-main); }
 /* confirm */
 .confirm-score{ display:flex; align-items:flex-start; justify-content:center; gap:16px; font-family:var(--font-scoreboard); letter-spacing:var(--scoreboard-tracking); font-size:46px; font-weight:800; color:var(--text-main); margin:8px 0 2px; }
 .confirm-side{ display:flex; flex-direction:column; align-items:center; gap:3px; }
@@ -399,9 +407,7 @@ input[type="text"]:focus,
 .ref-toast.err{ background:rgba(239,68,68,0.96); }
 </style>
 </head>
-<body data-theme="omens" data-vantage-background="gradient-balls">
-    <div class="vantage-background"><div class="vantage-background__balls" id="vantage-background-balls"></div></div>
-
+<body data-theme="omens" data-vantage-background="onyx-smoke">
     <div class="ref-app">
         <main class="ref-stage" id="ref-stage">
             <div class="ref-state" id="ref-state"><strong>Loading pool…</strong><span>Reading your QR link.</span></div>
@@ -426,42 +432,6 @@ input[type="text"]:focus,
    ============================================================================ */
 const SUPABASE_URL = "https://poyglhqxjlivhotkpkej.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
-</script>
-
-<script>
-/* ── Vantage gradient-balls background (inlined, self-contained WebGL) ───────── */
-(function initVantageWaveBackground(global){
-    const VERTEX_SRC="attribute vec2 a_pos;void main(){gl_Position=vec4(a_pos,0.0,1.0);}";
-    const FRAGMENT_SRC="precision highp float;uniform vec2 u_resolution;uniform float u_time;uniform float u_xScale;uniform float u_yScale;uniform float u_distortion;void main(){vec2 p=(gl_FragCoord.xy*2.0-u_resolution)/min(u_resolution.x,u_resolution.y);float d=length(p)*u_distortion;float rx=p.x*(1.0+d);float gx=p.x;float bx=p.x*(1.0-d);float r=0.05/abs(p.y+sin((rx+u_time)*u_xScale)*u_yScale);float g=0.05/abs(p.y+sin((gx+u_time)*u_xScale)*u_yScale);float b=0.05/abs(p.y+sin((bx+u_time)*u_xScale)*u_yScale);gl_FragColor=vec4(r,g,b,1.0);}";
-    const X_SCALE=1.0,Y_SCALE=0.5,DISTORTION=0.05,TIME_STEP=0.01;
-    let gl=null,program=null,canvas=null,uResolution,uTime,uXScale,uYScale,uDistortion,rafId=null,animTime=0,running=false;
-    const shouldAnimate=()=>!(global.matchMedia&&global.matchMedia('(prefers-reduced-motion: reduce)').matches);
-    function compile(t,s){const sh=gl.createShader(t);gl.shaderSource(sh,s);gl.compileShader(sh);if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(sh));return sh;}
-    function resize(){if(!canvas||!gl)return;const dpr=Math.min(global.devicePixelRatio||1,2);const w=Math.max(1,Math.floor(canvas.clientWidth*dpr));const h=Math.max(1,Math.floor(canvas.clientHeight*dpr));if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h);}}
-    function draw(){gl.uniform2f(uResolution,canvas.width,canvas.height);gl.uniform1f(uTime,animTime);gl.uniform1f(uXScale,X_SCALE);gl.uniform1f(uYScale,Y_SCALE);gl.uniform1f(uDistortion,DISTORTION);gl.drawArrays(gl.TRIANGLES,0,6);}
-    function frame(){if(!running)return;rafId=global.requestAnimationFrame(frame);resize();animTime+=TIME_STEP;draw();}
-    function renderStaticFrame(){resize();animTime=0;draw();}
-    function start(){if(running||!gl)return;running=true;rafId=global.requestAnimationFrame(frame);}
-    function stop(){running=false;if(rafId!=null){global.cancelAnimationFrame(rafId);rafId=null;}}
-    function boot(){
-        const host=document.getElementById('vantage-background-balls');if(!host)return;
-        canvas=document.createElement('canvas');canvas.className='vantage-background__canvas';host.appendChild(canvas);
-        try{
-            gl=canvas.getContext('webgl',{antialias:true,alpha:false})||canvas.getContext('experimental-webgl',{antialias:true,alpha:false});
-            if(!gl)throw new Error('no webgl');
-            program=gl.createProgram();gl.attachShader(program,compile(gl.VERTEX_SHADER,VERTEX_SRC));gl.attachShader(program,compile(gl.FRAGMENT_SHADER,FRAGMENT_SRC));gl.linkProgram(program);
-            if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw new Error('link');
-            gl.useProgram(program);
-            const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
-            const aPos=gl.getAttribLocation(program,'a_pos');gl.enableVertexAttribArray(aPos);gl.vertexAttribPointer(aPos,2,gl.FLOAT,false,0,0);
-            uResolution=gl.getUniformLocation(program,'u_resolution');uTime=gl.getUniformLocation(program,'u_time');uXScale=gl.getUniformLocation(program,'u_xScale');uYScale=gl.getUniformLocation(program,'u_yScale');uDistortion=gl.getUniformLocation(program,'u_distortion');
-        }catch(err){ if(canvas&&canvas.parentElement)canvas.parentElement.removeChild(canvas); gl=null; return; }
-        if(shouldAnimate())start(); else renderStaticFrame();
-        document.addEventListener('visibilitychange',()=>{ if(document.hidden)stop(); else if(shouldAnimate())start(); });
-        global.addEventListener('resize',resize);
-    }
-    if(document.readyState!=='loading')boot(); else document.addEventListener('DOMContentLoaded',boot);
-})(window);
 </script>
 
 <script>
@@ -625,7 +595,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
     function wireInputs(){
         stage.querySelectorAll('.score-input').forEach(inp=>{
             inp.addEventListener('input', ()=>{ inp.classList.remove('invalid'); formatScore(inp); recompute(); });
-            inp.addEventListener('change', ()=>{ const r=+inp.dataset.row, c=+inp.dataset.col; recompute(); renderWidgets(); maybeSubmit(r,c); });
+            inp.addEventListener('change', ()=>{ const r=+inp.dataset.row, c=+inp.dataset.col; recompute(); renderWidgets(); maybeSubmit(r,c); checkPoolCompletionLock(); });
         });
     }
 
@@ -680,8 +650,58 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
         const standings=`<section class="pool-widget pool-widget-leaderboard"><div class="pool-widget-rail"><div class="pool-widget-rail-icons">${svgIcon(ICON.trend)}</div><span class="pool-widget-rail-label">Pool ${poolNo} Standings</span></div><div class="pool-widget-main"><div class="pool-widget-body${anyBouts?'':' pool-widget-body-empty'}">${board}</div></div></section>`;
         host.innerHTML = health + standings;
     }
+
+    /* ============================ Post-completion lock ========================
+       Once every bout in the pool is recorded, the referee keeps read-only
+       access for a short window (to double-check anything), then the page
+       locks down for good — no more editing, no more data on screen. The
+       completion timestamp is persisted so the clock survives a reload and
+       can't be reset by just refreshing the page. */
+    const VIEW_MODE_MS = 10 * 60 * 1000;
+    let lockTimer = null;
+    function lockKey(){ return 'refapp.lock.' + SESSION_ID; }
+    function getLockState(){ try{ return JSON.parse(localStorage.getItem(lockKey())||'null'); }catch(e){ return null; } }
+    function setLockState(state){ try{ localStorage.setItem(lockKey(), JSON.stringify(state)); }catch(e){} }
+
+    function applyViewModeUI(isView){
+        stage.querySelectorAll('.score-input').forEach(inp=>{ inp.readOnly = isView; });
+        const footer = document.querySelector('.ref-footer');
+        if(footer) footer.style.display = isView ? 'none' : '';
+    }
+
+    function showLockedScreen(){
+        if(lockTimer){ clearTimeout(lockTimer); lockTimer=null; }
+        if(typeof timerState !== 'undefined' && timerState && timerState.tick){ clearInterval(timerState.tick); }
+        document.body.innerHTML = '<div class="ref-locked"><div class="ref-locked-msg">Thank you for scoring!</div></div>';
+    }
+
+    /* Checks/arms the lock clock. Returns true if the page is now permanently
+       locked (callers should stop doing anything else once this fires). */
+    function checkPoolCompletionLock(){
+        let state = getLockState();
+        let justCompleted = false;
+        if(!state && ROSTER.length){
+            const comp = computeCompletion();
+            if(comp.total>0 && comp.left===0){
+                state = { completedAt: Date.now() };
+                setLockState(state);
+                justCompleted = true;
+            }
+        }
+        if(!state){ applyViewModeUI(false); return false; }
+        const elapsed = Date.now() - state.completedAt;
+        if(elapsed >= VIEW_MODE_MS){ showLockedScreen(); return true; }
+        applyViewModeUI(true);
+        if(justCompleted) toast('Pool complete — view only for 10 minutes');
+        if(lockTimer) clearTimeout(lockTimer);
+        lockTimer = setTimeout(checkPoolCompletionLock, VIEW_MODE_MS - elapsed + 250);
+        return false;
+    }
+    document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) checkPoolCompletionLock(); });
+
     /* ---- boot ---- */
     async function load(){
+        if(checkPoolCompletionLock()) return; // already permanently locked from a prior visit
         if(!SESSION_ID || !TOKEN){ stateCard('Invalid link', 'This QR is missing its session or token.'); return; }
         if(SUPABASE_URL.includes('YOUR-PROJECT')){ stateCard('Not configured yet', 'Set SUPABASE_URL and the anon key in this page before hosting.'); return; }
         try{
@@ -692,6 +712,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
             (SESSION.bouts||[]).forEach(b=>{ boutMap[b.a_slot+'-'+b.b_slot]=b; });
             if(!ROSTER.length){ stateCard('Empty pool', 'No fencers were published for this pool yet.'); return; }
             render();
+            checkPoolCompletionLock();
         }catch(err){
             stateCard('Could not load pool', err.message || 'Check your connection and try again.');
         }
@@ -933,6 +954,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
             if(ai) ai.value=(victor===a && sa<=sb ? 'V':'')+sa;
             if(bi) bi.value=(victor===b && sb<=sa ? 'V':'')+sb;
             recompute(); renderWidgets();
+            checkPoolCompletionLock();
             return true;
         }catch(err){ toast('Send failed: '+(err.message||''), true); return false; }
     }
