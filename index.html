@@ -323,6 +323,19 @@ input[type="text"]:focus,
 .rbtn-white:hover{ background:#efefef; }
 .rbtn-white:active{ background:#d8d8d8; }
 .rbtn:disabled{ opacity:0.45; }
+/* Glass-outline recipe — same frosted-toolbar material as the app's other
+   glass surfaces (fencer cards, header), used here for Reset so it reads
+   as a secondary action next to Start/Finish instead of a flat ghost fill. */
+.rbtn-glass{
+    background: var(--canvas-toolbar-bg);
+    backdrop-filter: var(--canvas-toolbar-blur);
+    -webkit-backdrop-filter: var(--canvas-toolbar-blur);
+    border: 1px solid var(--canvas-toolbar-border);
+    color: var(--text-main);
+    box-shadow: none;
+}
+.rbtn-glass:hover{ filter:brightness(1.15); }
+.rbtn-glass:active{ filter:brightness(0.9); transform:translateY(1px); }
 /* full-screen timer — sits above stage, below footer chrome. Flat glass
    coat (same GIC recipe as every other card/sheet), no gradient wash. */
 .ref-timer{
@@ -343,7 +356,9 @@ input[type="text"]:focus,
 .ref-timer-center{ flex:0 0 auto; display:flex; flex-direction:column; align-items:center; justify-content:center; }
 .ref-timer-clock{ font-family:var(--font-scoreboard); letter-spacing:var(--scoreboard-tracking); font-weight:800; font-size:clamp(64px,20vw,116px); line-height:1; text-align:center; color:var(--text-main); font-variant-numeric:tabular-nums; margin:2px 0; }
 .ref-timer-clock.warn{ color:#ffce5a; } .ref-timer-clock.done{ color:var(--danger); }
-.ref-timer-controls{ display:flex; gap:12px; justify-content:center; padding:8px 18px; }
+/* Single shared control row (Reset / Start / Finish) — sits directly under
+   the fencers+clock row in both orientations. */
+.ref-timer-controls{ display:flex; gap:12px; justify-content:center; padding:8px 18px 16px; }
 .ref-timer-controls .rbtn{ flex:0 0 auto; }
 .ref-fencers{ flex:1 1 auto; display:flex; gap:12px; padding:10px 16px; min-height:0; }
 .ref-fencer{
@@ -355,6 +370,10 @@ input[type="text"]:focus,
     border: 1px solid var(--canvas-toolbar-border);
     padding:18px 10px; min-width:0;
 }
+/* Fencing-box color coding: left = red, right = green — same in portrait
+   and landscape. */
+#tfencer-0{ border-color:var(--danger); }
+#tfencer-1{ border-color:var(--success); }
 .ref-fencer.is-leading .ref-fencer-score{ color:#ffd873; }
 .ref-fencer-name{ font-size:15px; font-weight:var(--font-weight-heading); color:var(--text-main); text-align:center; word-break:break-word; }
 .ref-fencer-score{ font-family:var(--font-scoreboard); letter-spacing:var(--scoreboard-tracking); font-weight:800; font-size:76px; line-height:1; color:var(--text-main); transition:color .15s ease; }
@@ -365,21 +384,26 @@ input[type="text"]:focus,
 .touch-btn.plus:hover{ background:#efefef; }
 .touch-btn:active{ transform:translateY(1px); }
 /* Landscape phones: short viewport height, plenty of width — timer sits
-   dead center with a fencer card flanking each side, colored like a real
-   fencing scoring box (left = red, right = green). .ref-fencers is
-   flattened with display:contents so its two cards become direct flex
-   items of .ref-timer-main, sitting either side of the centered clock. */
+   dead center and large, with a square fencer card flanking each side,
+   colored like a real fencing scoring box (left = red, right = green).
+   .ref-fencers is flattened with display:contents so its two cards become
+   direct flex items of .ref-timer-main, sitting either side of the clock.
+   Reset/Start/Finish stay one shared row underneath the whole thing. */
 @media (orientation:landscape) and (max-height:560px){
-    .ref-timer{ padding-bottom:calc(58px + env(safe-area-inset-bottom)); }
-    .ref-timer-top{ padding:8px 16px; }
-    .ref-timer-main{ flex-direction:row; align-items:stretch; gap:14px; padding:0 14px; }
-    .ref-timer-center{ order:2; flex:0 0 200px; gap:6px; }
-    .ref-timer-clock{ font-size:clamp(40px,8vw,60px); }
-    .ref-timer-controls{ padding:4px 0; }
+    .ref-timer{ padding-bottom:calc(48px + env(safe-area-inset-bottom)); }
+    .ref-timer-top{ padding:6px 16px; }
+    .ref-timer-main{ flex-direction:row; align-items:center; gap:14px; padding:0 14px; }
+    .ref-timer-center{ order:2; flex:1 1 auto; min-width:0; }
+    .ref-timer-clock{ font-size:clamp(48px,10vw,88px); }
+    .ref-timer-controls{ padding:6px 18px 10px; }
     .ref-fencers{ display:contents; }
-    .ref-fencer{ padding:10px 8px; gap:8px; border-width:2px; }
-    #tfencer-0{ order:1; border-color:var(--danger); }
-    #tfencer-1{ order:3; border-color:var(--success); }
+    .ref-fencer{
+        flex:0 0 auto; align-self:center;
+        width:clamp(120px,24vw,190px); aspect-ratio:1;
+        padding:10px 8px; gap:8px; border-width:2px;
+    }
+    #tfencer-0{ order:1; }
+    #tfencer-1{ order:3; }
     .ref-fencer-name{ font-size:12.5px; }
     .ref-fencer-score{ font-size:44px; }
     .touch-btn{ width:44px; height:44px; font-size:22px; border-radius:11px; }
@@ -837,10 +861,6 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
             <div class="ref-timer-main">
                 <div class="ref-timer-center">
                     <div class="ref-timer-clock" id="tclock">3:00</div>
-                    <div class="ref-timer-controls">
-                        <button class="rbtn rbtn-ghost" id="t-reset">Reset</button>
-                        <button class="rbtn" id="t-startpause" style="min-width:130px;">Start</button>
-                    </div>
                 </div>
                 <div class="ref-fencers">
                     ${[a,b].map((slot,side)=>`
@@ -854,7 +874,9 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
                         </div>`).join('')}
                 </div>
             </div>
-            <div class="ref-timer-controls" style="padding-bottom:16px;">
+            <div class="ref-timer-controls">
+                <button class="rbtn rbtn-glass" id="t-reset">Reset</button>
+                <button class="rbtn" id="t-startpause" style="min-width:130px;">Start</button>
                 <button class="rbtn rbtn-white" id="t-finish">Finish bout</button>
             </div>`;
         const clock = ov.querySelector('#tclock');
