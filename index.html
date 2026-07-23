@@ -802,8 +802,19 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
     function boutScored(i,j){ const a=cellInput(i,j), b=cellInput(j,i); return !!(a&&b&&a.value.trim()!==''&&b.value.trim()!==''); }
     function fencerDone(i){ return ROSTER.every((_,j)=> j===i || boutScored(i,j)); }
     function firstUnscoredBout(){ const n=ROSTER.length; for(let i=0;i<n;i++) for(let j=i+1;j<n;j++) if(!boutScored(i,j)) return {a:i,b:j}; return null; }
-    function leftOptions(){ return ROSTER.map((f,i)=>({i,name:f.name||('Fencer '+(i+1))})).filter(o=> !fencerDone(o.i)); }
-    function opponentOptions(a){ return ROSTER.map((f,j)=>({j,name:f.name||('Fencer '+(j+1))})).filter(o=> o.j!==a && !boutScored(a,o.j)); }
+    /* Two fencers can share the exact same name (duplicate registration,
+       common name). Tag the ones that collide with the same pool-sheet #
+       the ref already sees in the leftmost column, so picker/timer/confirm
+       never show two identical, unpickable labels. */
+    function rosterName(i){ const f=ROSTER[i]; return (f&&f.name)||('Fencer '+(i+1)); }
+    function rosterSeed(i){ const f=ROSTER[i]; return (f&&f.seed!=null)? f.seed : (i+1); }
+    function rosterLabel(i){
+        const name = rosterName(i);
+        const dup = ROSTER.some((_,j)=> j!==i && rosterName(j)===name);
+        return dup ? `${name} (#${rosterSeed(i)})` : name;
+    }
+    function leftOptions(){ return ROSTER.map((f,i)=>({i,name:rosterLabel(i)})).filter(o=> !fencerDone(o.i)); }
+    function opponentOptions(a){ return ROSTER.map((f,j)=>({j,name:rosterLabel(j)})).filter(o=> o.j!==a && !boutScored(a,o.j)); }
 
     /* --- Step 1: pick who is fencing (only unscored pairings offered) --- */
     function openBoutPicker(){
@@ -855,7 +866,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
         timerState = { a, b, sa:0, sb:0, secs:BOUT_SECS, running:false, tick:null };
         const ov = document.createElement('div'); ov.className='ref-timer';
         timerEl = ov;
-        const nameFor = (slot)=> esc(ROSTER[slot]?ROSTER[slot].name:'');
+        const nameFor = (slot)=> esc(ROSTER[slot]?rosterLabel(slot):'');
         ov.innerHTML = `
             <div class="ref-timer-top"><span class="x" data-abort>✕ Cancel</span><span>Pool ${(SESSION.poolIndex||0)+1}</span></div>
             <div class="ref-timer-main">
@@ -930,7 +941,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
     function openConfirm(timerOv, a, b, sa, sb){
         let victor = sa>sb ? a : (sb>sa ? b : null);
         const ov = document.createElement('div'); ov.className='ref-overlay';
-        const nameA=esc(ROSTER[a]?ROSTER[a].name:''), nameB=esc(ROSTER[b]?ROSTER[b].name:'');
+        const nameA=esc(ROSTER[a]?rosterLabel(a):''), nameB=esc(ROSTER[b]?rosterLabel(b):'');
         function render(){
             const needPick = victor==null;
             ov.innerHTML = `
