@@ -363,10 +363,16 @@ input[type="text"]:focus,
 .ref-timer-center{ flex:0 0 auto; display:flex; flex-direction:column; align-items:center; justify-content:center; }
 .ref-timer-clock{ font-family:var(--font-scoreboard); letter-spacing:var(--scoreboard-tracking); font-weight:400; font-size:clamp(64px,20vw,116px); line-height:1; text-align:center; color:var(--text-main); font-variant-numeric:tabular-nums; margin:2px 0; }
 .ref-timer-clock.warn{ color:#ffce5a; } .ref-timer-clock.done{ color:var(--danger); }
-/* Single shared control row (Reset / Start / Finish) — sits directly under
-   the fencers+clock row in both orientations. */
-.ref-timer-controls{ display:flex; gap:12px; justify-content:center; padding:8px 18px 16px; }
-.ref-timer-controls .rbtn{ flex:0 0 auto; }
+/* Single shared control row — sits directly under the fencers+clock row in
+   both orientations. Left→right: Reset (icon), Double (DB), Start, Finish.
+   Sized to stay on one line on a narrow phone, never hanging off the edge. */
+.ref-timer-controls{ display:flex; gap:8px; justify-content:center; align-items:stretch; padding:8px 10px 16px; flex-wrap:nowrap; }
+.ref-timer-controls .rbtn{ flex:0 1 auto; min-width:0; padding:12px 14px; font-size:14px; white-space:nowrap; }
+/* Compact fixed-width icon / short-label buttons so the two text buttons get
+   the room. */
+.ref-timer-controls .rbtn-compact{ flex:0 0 auto; width:48px; padding:0; display:inline-flex; align-items:center; justify-content:center; }
+.ref-timer-controls .rbtn-compact svg{ width:20px; height:20px; display:block; }
+.ref-timer-controls #t-startpause{ flex:0 1 auto; }
 .ref-fencers{ flex:1 1 auto; display:flex; gap:12px; padding:10px 16px; min-height:0; }
 .ref-fencer{
     flex:1 1 0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
@@ -422,7 +428,9 @@ input[type="text"]:focus,
 /* confirm */
 .confirm-score{ display:flex; align-items:flex-start; justify-content:center; gap:16px; font-family:var(--font-scoreboard); letter-spacing:var(--scoreboard-tracking); font-size:46px; font-weight:400; color:var(--text-main); margin:8px 0 2px; }
 .confirm-side{ display:flex; flex-direction:column; align-items:center; gap:3px; }
-.confirm-side .nm{ font-family:var(--font-ui); font-size:12.5px; color:var(--text-light); font-weight:var(--font-weight-heading); max-width:120px; text-align:center; }
+/* Reset the scoreboard letter-spacing/font inherited from .confirm-score —
+   without this the name reads badly squished. Plain UI font, normal spacing. */
+.confirm-side .nm{ font-family:var(--font-ui); font-size:12.5px; font-weight:var(--font-weight-heading); letter-spacing:normal; line-height:1.3; color:var(--text-light); max-width:150px; text-align:center; word-break:break-word; }
 .confirm-side.win{ color:#ffd873; } .confirm-side.win .nm{ color:#ffd873; }
 .confirm-hint{ text-align:center; font-size:12.5px; color:var(--text-light); margin-top:8px; }
 .winner-pick{ display:flex; gap:10px; margin-top:10px; }
@@ -1184,9 +1192,11 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
                 </div>
             </div>
             <div class="ref-timer-controls">
-                <button class="rbtn rbtn-glass" id="t-reset">Reset</button>
-                <button class="rbtn rbtn-glass" id="t-double">Double Touch</button>
-                <button class="rbtn" id="t-startpause" style="min-width:130px;">Start</button>
+                <button class="rbtn rbtn-glass rbtn-compact" id="t-reset" aria-label="Reset timer" title="Reset">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                </button>
+                <button class="rbtn rbtn-glass rbtn-compact" id="t-double" aria-label="Double touch" title="Double touch">DB</button>
+                <button class="rbtn" id="t-startpause">Start</button>
                 <button class="rbtn rbtn-white" id="t-finish">Finish bout</button>
             </div>`;
         const clock = ov.querySelector('#tclock');
