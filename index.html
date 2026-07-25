@@ -291,6 +291,45 @@ input[type="text"]:focus,
 .pool-widget-body-empty{ display:flex; align-items:center; justify-content:center; }
 .pool-lb-empty{ margin:0; padding:0 12px; font-size:12px; font-style:italic; color:var(--text-light); text-align:center; }
 
+/* ── Bout Order widget: tappable list of the standard bout sequence ─────────── */
+.pool-widget-boutorder .bo-body{ padding:8px 8px 10px; }
+.bout-order-list{ display:flex; flex-direction:column; gap:6px; }
+.bout-order-item{
+    display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+    padding:11px 12px; border-radius:12px; cursor:pointer;
+    background:var(--neutral-surface); border:1px solid var(--neutral-border);
+    color:var(--text-main); font-family:var(--font-ui); min-width:0;
+    transition:background .14s ease, transform .1s ease;
+    -webkit-tap-highlight-color:transparent;
+}
+.bout-order-item:hover{ background:var(--neutral-surface-hover); }
+.bout-order-item:active{ background:var(--neutral-surface-press); transform:translateY(1px); }
+.bout-order-item.is-done{ background:transparent; border-color:color-mix(in srgb, var(--text-main) 9%, transparent); }
+.bout-order-item.is-done .bo-name{ color:var(--text-light); }
+.bo-num{
+    flex:0 0 auto; width:24px; height:24px; border-radius:7px;
+    display:inline-flex; align-items:center; justify-content:center;
+    font-family:var(--font-scoreboard); letter-spacing:-0.03em; font-size:11px;
+    color:var(--text-light); background:color-mix(in srgb, var(--text-main) 7%, transparent);
+    font-variant-numeric:tabular-nums;
+}
+.bo-names{ flex:1 1 auto; min-width:0; display:flex; align-items:center; gap:7px; }
+.bo-name{
+    min-width:0; flex:1 1 0; font-size:13.5px; font-weight:var(--font-weight-strong);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.bo-vs{ flex:0 0 auto; font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-light); }
+.bo-status{ flex:0 0 auto; display:inline-flex; align-items:center; gap:6px; }
+.bo-score{
+    font-family:var(--font-scoreboard); letter-spacing:-0.02em; font-size:14px;
+    color:var(--text-light); font-variant-numeric:tabular-nums; display:inline-flex; align-items:center; gap:2px;
+}
+.bo-score b{ font-weight:400; color:var(--text-main); }
+.bo-score .bo-win{ color:#ffd873; }
+.bo-dash{ color:var(--text-light); }
+.bo-check{ width:15px; height:15px; color:var(--success); }
+.bo-chevron{ width:17px; height:17px; color:var(--text-light); }
+
 /* ── Bout flow: picker sheet → timer → confirm ──────────────────────────────── */
 .ref-overlay{ position:fixed; inset:0; z-index:70; display:flex; opacity:0; pointer-events:none; transition:opacity .2s ease; }
 .ref-overlay.open{ opacity:1; pointer-events:auto; }
@@ -363,6 +402,22 @@ input[type="text"]:focus,
 .ref-timer-center{ flex:0 0 auto; display:flex; flex-direction:column; align-items:center; justify-content:center; }
 .ref-timer-clock{ font-family:var(--font-scoreboard); letter-spacing:var(--scoreboard-tracking); font-weight:400; font-size:clamp(64px,20vw,116px); line-height:1; text-align:center; color:var(--text-main); font-variant-numeric:tabular-nums; margin:2px 0; }
 .ref-timer-clock.warn{ color:#ffce5a; } .ref-timer-clock.done{ color:var(--danger); }
+/* Period / break status under the clock, and the DE weapon-format picker. */
+.ref-timer-status{ margin-top:4px; text-align:center; font-size:12px; font-weight:var(--font-weight-heading); letter-spacing:0.02em; color:var(--text-light); min-height:15px; }
+.ref-timer-weapon{ display:flex; align-items:center; justify-content:center; gap:10px; padding:0 18px calc(12px + env(safe-area-inset-bottom)); }
+.weap-label{ font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-light); }
+.weap-seg{ display:inline-flex; background:var(--neutral-surface); border:1px solid var(--neutral-border); border-radius:10px; padding:3px; gap:3px; }
+.weap-seg-btn{
+    border:none; background:transparent; color:var(--text-light); cursor:pointer;
+    font-family:var(--font-ui); font-size:13px; font-weight:var(--font-weight-heading);
+    padding:7px 15px; border-radius:8px; transition:background .14s ease, color .14s ease;
+    -webkit-tap-highlight-color:transparent;
+}
+.weap-seg-btn.active{ background:var(--selected-surface); color:var(--selected-fg); }
+@media (orientation:landscape) and (max-height:560px){
+    .ref-timer-weapon{ padding:0 18px calc(8px + env(safe-area-inset-bottom)); }
+    .ref-timer-status{ font-size:11px; margin-top:2px; }
+}
 /* Single shared control row — sits directly under the fencers+clock row in
    both orientations. Left→right: Reset (icon), Double (DB), Start, Finish.
    Sized to stay on one line on a narrow phone, never hanging off the edge. */
@@ -706,8 +761,29 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
     const ICON = {
         activity: '<path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/>',
         trend: '<path d="M14.828 14.828 21 21"/><path d="M21 16v5h-5"/><path d="m21 3-9 9-4-4-6 6"/><path d="M21 8V3h-5"/>',
-        crown: '<path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/>'
+        crown: '<path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/>',
+        updown: '<path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/>',
+        check: '<path d="M20 6 9 17l-5-5"/>',
+        chevron: '<path d="m9 18 6-6-6-6"/>'
     };
+
+    /* Standard FIE pool bout orders (positions = pool-sheet row order, which
+       equals slot+1). Identical to the desktop's printed sheet, so the phone
+       order and the paper order always agree. */
+    const POOL_BOUT_ORDERS = {
+        2: [[1,2]],
+        3: [[1,2],[2,3],[1,3]],
+        4: [[1,4],[2,3],[1,3],[2,4],[3,4],[1,2]],
+        5: [[1,2],[3,4],[5,1],[2,3],[5,4],[1,3],[2,5],[4,1],[3,5],[4,2]],
+        6: [[1,2],[4,5],[2,3],[5,6],[3,1],[6,4],[2,5],[1,4],[5,3],[1,6],[4,2],[3,6],[5,1],[3,4],[6,2]],
+        7: [[1,4],[2,5],[3,6],[7,1],[5,4],[2,3],[6,7],[5,1],[4,3],[6,2],[5,7],[3,1],[4,6],[7,2],[3,5],[1,6],[2,4],[7,3],[6,5],[1,2],[4,7]],
+        8: [[2,3],[1,5],[7,4],[6,8],[1,2],[3,4],[5,6],[8,7],[4,1],[5,2],[8,3],[6,7],[4,2],[8,1],[7,5],[3,6],[2,8],[5,4],[6,1],[3,7],[4,8],[2,6],[3,5],[1,7],[4,6],[8,5],[7,2],[1,3]]
+    };
+    function getPoolBoutOrder(size){
+        if(POOL_BOUT_ORDERS[size]) return POOL_BOUT_ORDERS[size];
+        const order=[]; for(let a=1;a<size;a++) for(let b=a+1;b<=size;b++) order.push([a,b]);
+        return order;
+    }
     function svgIcon(inner, cls){ return `<svg class="${cls||''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`; }
     function ringSvg(size, stroke, pct){
         const r=(size-stroke)/2, circ=2*Math.PI*r, target=circ*(1-Math.max(0,Math.min(1,pct))), cx=size/2;
@@ -736,6 +812,40 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
         rows.sort((a,b)=> b.winPct-a.winPct || b.v-a.v || b.ind-a.ind || b.ts-a.ts || a.r-b.r);
         return rows;
     }
+    /* Bout Order widget: the standard fencing bout order (who fences who, in
+       sequence). Tap any bout to jump straight into its timer — no name
+       fumbling. Completed bouts show their score; the rest are tappable. */
+    function boutOrderScore(i,j){
+        const a=cellInput(i,j), b=cellInput(j,i);
+        if(!(a&&b&&a.value.trim()!==''&&b.value.trim()!=='')) return null;
+        const mi=touches(a.value), mj=touches(b.value);
+        if(mi==null||mj==null) return null;
+        // winner = V marker, else higher touches
+        let win=null;
+        if(isV(a.value)&&!isV(b.value)) win=i; else if(isV(b.value)&&!isV(a.value)) win=j;
+        else if(mi>mj) win=i; else if(mj>mi) win=j;
+        return { mi, mj, win };
+    }
+    function renderBoutOrderWidget(){
+        const n=ROSTER.length;
+        const items=getPoolBoutOrder(n).map(([pa,pb],idx)=>{
+            const i=pa-1, j=pb-1;
+            if(i<0||j<0||i>=n||j>=n) return '';
+            const sc=boutOrderScore(i,j);
+            const done=!!sc;
+            const nameI=esc(rosterLabel(i)), nameJ=esc(rosterLabel(j));
+            const status=done
+                ? `<span class="bo-score"><b class="${sc.win===i?'bo-win':''}">${sc.mi}</b><span class="bo-dash">–</span><b class="${sc.win===j?'bo-win':''}">${sc.mj}</b></span>${svgIcon(ICON.check,'bo-check')}`
+                : svgIcon(ICON.chevron,'bo-chevron');
+            return `<button type="button" class="bout-order-item${done?' is-done':''}" data-bout-a="${i}" data-bout-b="${j}">
+                <span class="bo-num">${idx+1}</span>
+                <span class="bo-names"><span class="bo-name">${nameI}</span><span class="bo-vs">vs</span><span class="bo-name">${nameJ}</span></span>
+                <span class="bo-status">${status}</span>
+            </button>`;
+        }).join('');
+        return `<section class="pool-widget pool-widget-boutorder"><div class="pool-widget-rail"><div class="pool-widget-rail-icons">${svgIcon(ICON.updown)}</div><span class="pool-widget-rail-label">Bout Order</span></div><div class="pool-widget-main"><div class="pool-widget-body bo-body"><div class="bout-order-list">${items}</div></div></div></section>`;
+    }
+
     function renderWidgets(){
         const host=document.getElementById('ref-widgets'); if(!host) return;
         const poolNo=(SESSION.poolIndex||0)+1;
@@ -751,7 +861,11 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
         }).join('');
         const board=anyBouts?`<ol class="pool-leaderboard">${rows}</ol>`:`<p class="pool-lb-empty">Enter bout scores to see the leaders emerge.</p>`;
         const standings=`<section class="pool-widget pool-widget-leaderboard"><div class="pool-widget-rail"><div class="pool-widget-rail-icons">${svgIcon(ICON.trend)}</div><span class="pool-widget-rail-label">Pool ${poolNo} Standings</span></div><div class="pool-widget-main"><div class="pool-widget-body${anyBouts?'':' pool-widget-body-empty'}">${board}</div></div></section>`;
-        host.innerHTML = health + standings;
+        // Bout Order sits directly under the pool card, before the stat widgets.
+        host.innerHTML = renderBoutOrderWidget() + health + standings;
+        host.querySelectorAll('.bout-order-item').forEach(btn=>{
+            btn.addEventListener('click', ()=> openTimer(+btn.dataset.boutA, +btn.dataset.boutB));
+        });
     }
 
     /* ============================ DE bracket mode =============================
@@ -1046,7 +1160,26 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
 
     /* ============================ Bout timer flow ============================ */
     const BOUT_SECS = 180;
+    /* Touch cap is weapon-independent: pools are to 5, DE to 15 for foil,
+       épée AND sabre. What differs by weapon in DE is the CLOCK structure. */
     function touchCap(){ return IS_DE ? 15 : 5; }
+    /* Per-weapon DE bout formats:
+         Foil / Épée — three 3:00 periods (9 min max), to 15.
+         Sabre       — to 15 with a break when a fencer reaches 8 touches.
+       Pools are one 3:00 period to 5 for every weapon. */
+    const DE_WEAPONS = {
+        epee:  { key:'epee',  label:'Épée',  periods:3, periodSecs:180, breakAt:null },
+        foil:  { key:'foil',  label:'Foil',  periods:3, periodSecs:180, breakAt:null },
+        sabre: { key:'sabre', label:'Sabre', periods:2, periodSecs:180, breakAt:8 }
+    };
+    const POOL_FORMAT = { key:'pool', label:'Pool', periods:1, periodSecs:180, breakAt:null };
+    function normWeapon(w){
+        const s = String(w||'').toLowerCase();
+        if(/sab/.test(s)) return 'sabre';
+        if(/fo/.test(s)) return 'foil';
+        return 'epee';
+    }
+    function defaultDEFormat(){ return DE_WEAPONS[normWeapon(SESSION && SESSION.weapon)] || DE_WEAPONS.epee; }
     let timerState = null;
     let timerEl = null;
     let pageMode = 'pools'; /* 'pools' | 'bout' */
@@ -1174,16 +1307,25 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
        15 in DE). Double Touch scores one for each fencer (épée). --- */
     function openTimer(a,b){
         if(timerEl){ closeTimer(timerEl, true); }
-        timerState = { a, b, sa:0, sb:0, secs:BOUT_SECS, running:false, tick:null };
+        const fmtCfg = IS_DE ? defaultDEFormat() : POOL_FORMAT;
+        timerState = { a, b, sa:0, sb:0, secs:fmtCfg.periodSecs, running:false, tick:null, fmt:fmtCfg, period:1, broke:false, pending:null };
         const ov = document.createElement('div'); ov.className='ref-timer';
         timerEl = ov;
         const nameFor = (slot)=> esc(ROSTER[slot]?rosterLabel(slot):'');
         const topLabel = IS_DE ? deMatchLabel(a,b) : `Pool ${(SESSION.poolIndex||0)+1}`;
+        const weaponRow = IS_DE ? `
+            <div class="ref-timer-weapon">
+                <span class="weap-label">Format</span>
+                <div class="weap-seg" id="tweap">
+                    ${Object.values(DE_WEAPONS).map(w=>`<button type="button" class="weap-seg-btn${w.key===fmtCfg.key?' active':''}" data-weap="${w.key}">${w.label}</button>`).join('')}
+                </div>
+            </div>` : '';
         ov.innerHTML = `
             <div class="ref-timer-top"><span class="x" data-abort>✕ Cancel</span><span>${esc(topLabel)}</span></div>
             <div class="ref-timer-main">
                 <div class="ref-timer-center">
                     <div class="ref-timer-clock" id="tclock">3:00</div>
+                    <div class="ref-timer-status" id="tstatus"></div>
                 </div>
                 <div class="ref-fencers">
                     ${[a,b].map((slot,side)=>`
@@ -1204,28 +1346,68 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
                 <button class="rbtn rbtn-glass rbtn-compact" id="t-double" aria-label="Double touch" title="Double touch">DB</button>
                 <button class="rbtn" id="t-startpause">Start</button>
                 <button class="rbtn rbtn-white" id="t-finish">Finish bout</button>
-            </div>`;
+            </div>
+            ${weaponRow}`;
         const clock = ov.querySelector('#tclock');
+        const statusEl = ov.querySelector('#tstatus');
+        const primaryBtn = ov.querySelector('#t-startpause');
         const fmt = (s)=> Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+        function statusText(){
+            if(!IS_DE) return 'First to 5';
+            if(timerState.pending==='next-period') return `Break — end of period ${timerState.period}`;
+            if(timerState.pending==='resume') return `Break at ${timerState.fmt.breakAt} — tap Resume`;
+            if(timerState.fmt.breakAt) return `First to 15 · break at ${timerState.fmt.breakAt}`;
+            return `Period ${timerState.period} of ${timerState.fmt.periods}`;
+        }
+        function primaryLabel(){
+            if(timerState.pending==='next-period') return 'Next period';
+            if(timerState.pending==='resume') return 'Resume';
+            return timerState.running ? 'Pause' : 'Start';
+        }
         function paint(){
             clock.textContent = fmt(timerState.secs);
             clock.classList.toggle('warn', timerState.secs<=30 && timerState.secs>0);
             clock.classList.toggle('done', timerState.secs===0);
+            if(statusEl) statusEl.textContent = statusText();
+            if(primaryBtn) primaryBtn.textContent = primaryLabel();
             ov.querySelector('#tsc-0').textContent = timerState.sa;
             ov.querySelector('#tsc-1').textContent = timerState.sb;
             ov.querySelector('#tfencer-0').classList.toggle('is-leading', timerState.sa>timerState.sb);
             ov.querySelector('#tfencer-1').classList.toggle('is-leading', timerState.sb>timerState.sa);
         }
-        function stop(){ timerState.running=false; if(timerState.tick){ clearInterval(timerState.tick); timerState.tick=null; } ov.querySelector('#t-startpause').textContent='Start'; }
-        function start(){ if(timerState.running||timerState.secs<=0) return; timerState.running=true; ov.querySelector('#t-startpause').textContent='Pause';
-            timerState.tick=setInterval(()=>{ timerState.secs--; if(timerState.secs<=0){ timerState.secs=0; stop(); } paint(); }, 1000); }
-        ov.querySelector('#t-startpause').addEventListener('click', ()=> timerState.running?stop():start());
-        ov.querySelector('#t-reset').addEventListener('click', ()=>{ stop(); timerState.secs=BOUT_SECS; paint(); });
+        function stop(){ timerState.running=false; if(timerState.tick){ clearInterval(timerState.tick); timerState.tick=null; } paint(); }
+        function start(){ if(timerState.running||timerState.secs<=0) return; timerState.running=true; paint();
+            timerState.tick=setInterval(()=>{
+                timerState.secs--;
+                if(timerState.secs<=0){
+                    timerState.secs=0; stop();
+                    // Time-based periods (foil/épée): expiring a non-final period
+                    // opens the between-period break instead of ending the bout.
+                    if(IS_DE && !timerState.fmt.breakAt && timerState.period < timerState.fmt.periods){
+                        timerState.pending='next-period';
+                    }
+                }
+                paint();
+            }, 1000); }
+        function onTouchChanged(){
+            const cap=touchCap();
+            if(timerState.sa>=cap || timerState.sb>=cap){ stop(); return; }   // bout won
+            // Sabre: one break the first time a fencer reaches 8.
+            if(IS_DE && timerState.fmt.breakAt && !timerState.broke && Math.max(timerState.sa,timerState.sb) >= timerState.fmt.breakAt){
+                stop(); timerState.broke=true; timerState.pending='resume'; paint();
+            }
+        }
+        primaryBtn.addEventListener('click', ()=>{
+            if(timerState.pending==='next-period'){ timerState.period++; timerState.secs=timerState.fmt.periodSecs; timerState.pending=null; paint(); return; }
+            if(timerState.pending==='resume'){ timerState.pending=null; start(); return; }
+            timerState.running ? stop() : start();
+        });
+        ov.querySelector('#t-reset').addEventListener('click', ()=>{ stop(); timerState.secs=timerState.fmt.periodSecs; timerState.pending=null; paint(); });
         ov.querySelectorAll('.touch-btn').forEach(btn=> btn.addEventListener('click', ()=>{
             const cap=touchCap();
             const side=+btn.dataset.side, d=+btn.dataset.d, key= side===0?'sa':'sb';
             timerState[key]=Math.max(0, Math.min(cap, timerState[key]+d)); paint();
-            if(timerState[key]===cap) stop();
+            onTouchChanged();
         }));
         /* Épée double: a plain momentary point button — each tap adds one
            touch to BOTH fencers (capped), exactly like the +1 buttons add one
@@ -1235,8 +1417,20 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
             timerState.sa=Math.min(cap, timerState.sa+1);
             timerState.sb=Math.min(cap, timerState.sb+1);
             paint();
-            if(timerState.sa===cap || timerState.sb===cap) stop();
+            onTouchChanged();
         });
+        // Weapon picker (DE): reconfigure the clock/period structure on the fly.
+        const weapSeg = ov.querySelector('#tweap');
+        if(weapSeg){
+            weapSeg.querySelectorAll('.weap-seg-btn').forEach(btn=> btn.addEventListener('click', ()=>{
+                const next = DE_WEAPONS[btn.dataset.weap]; if(!next) return;
+                stop();
+                timerState.fmt = next; timerState.period = 1; timerState.secs = next.periodSecs;
+                timerState.broke = false; timerState.pending = null;
+                weapSeg.querySelectorAll('.weap-seg-btn').forEach(b=> b.classList.toggle('active', b===btn));
+                paint();
+            }));
+        }
         ov.querySelector('#t-finish').addEventListener('click', ()=>{ stop(); openConfirm(ov, a, b, timerState.sa, timerState.sb); });
         ov.querySelector('[data-abort]').addEventListener('click', ()=>{ stop(); closeTimer(ov); });
         document.body.appendChild(ov);
