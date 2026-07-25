@@ -1221,11 +1221,11 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
             timerState[key]=Math.max(0, Math.min(cap, timerState[key]+d)); paint();
             if(timerState[key]===cap) stop();
         }));
-        /* Épée double: one touch to each. Annulled at la belle (both one from
-           the cap) — the deciding touch must be single. */
+        /* Épée double: a plain momentary point button — each tap adds one
+           touch to BOTH fencers (capped), exactly like the +1 buttons add one
+           to a single fencer. Not a toggle, no special cases. */
         ov.querySelector('#t-double').addEventListener('click', ()=>{
             const cap=touchCap();
-            if(timerState.sa===cap-1 && timerState.sb===cap-1){ toast('Double annulled at la belle', true); return; }
             timerState.sa=Math.min(cap, timerState.sa+1);
             timerState.sb=Math.min(cap, timerState.sb+1);
             paint();
