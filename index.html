@@ -1116,14 +1116,18 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
         const dup = ROSTER.some((_,j)=> j!==i && rosterName(j)===name);
         return dup ? `${name} (#${rosterSeed(i)})` : name;
     }
-    function leftOptions(){ return ROSTER.map((f,i)=>({i,name:rosterLabel(i)})).filter(o=> !fencerDone(o.i)); }
-    function opponentOptions(a){ return ROSTER.map((f,j)=>({j,name:rosterLabel(j)})).filter(o=> o.j!==a && !boutScored(a,o.j)); }
+    /* Both picker boxes show the SAME list: every fencer who still has at
+       least one unscored bout. No pair-dependent filtering — picking a left
+       name never hides the right name you're looking for. (Re-picking an
+       already-scored pairing is allowed; sending it again simply overwrites
+       that bout, which doubles as the correction path.) */
+    function availableOptions(){ return ROSTER.map((f,i)=>({i,name:rosterLabel(i)})).filter(o=> !fencerDone(o.i)); }
 
     /* --- Step 1: pick who is fencing (only unscored pairings offered) --- */
     function openBoutPicker(){
         if(!ROSTER.length){ toast(IS_DE?'Load a bracket first':'Load a pool first', true); return; }
         if(IS_DE){ openDEMatchPicker(); return; }
-        if(!leftOptions().length){ toast('All bouts recorded ✓'); pageMode='pools'; syncPageChrome(); return; }
+        if(!availableOptions().length){ toast('All bouts recorded ✓'); pageMode='pools'; syncPageChrome(); return; }
         const def = firstUnscoredBout();
         const ov = document.createElement('div'); ov.className='ref-overlay';
         ov.innerHTML = `
@@ -1143,11 +1147,13 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
                 </div>
             </div></div>`;
         const selA=ov.querySelector('#pick-a'), selB=ov.querySelector('#pick-b');
-        selA.innerHTML = leftOptions().map(o=>`<option value="${o.i}">${esc(o.name)}</option>`).join('');
+        selA.innerHTML = availableOptions().map(o=>`<option value="${o.i}">${esc(o.name)}</option>`).join('');
         function fillB(){
-            const a=+selA.value; const opps=opponentOptions(a);
-            selB.innerHTML = opps.map(o=>`<option value="${o.j}">${esc(o.name)}</option>`).join('');
+            const a=+selA.value;
+            const prev=selB.value;
+            selB.innerHTML = availableOptions().filter(o=> o.i!==a).map(o=>`<option value="${o.i}">${esc(o.name)}</option>`).join('');
             if(def && def.a===a) selB.value=String(def.b);
+            else if(prev!=='' && +prev!==a && Array.from(selB.options).some(op=>op.value===prev)) selB.value=prev;
         }
         if(def) selA.value=String(def.a);
         fillB();
