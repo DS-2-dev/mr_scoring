@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="omens">
+<html lang="en" data-theme="omens" data-mode="dark" data-widget-palette="cobalt">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
@@ -47,6 +47,99 @@
     --selected-surface: #ffffff;
     --selected-fg: #1a1a1a;
 }
+
+/* ── Light mode ──────────────────────────────────────────────────────────────
+   Same token names, light values — every surface in the app reads these, so
+   nothing else needs a light-mode branch. Mirrors the desktop's white viewbox
+   mode: the glass recipe stays, it just sits on light instead of dark. ── */
+html[data-mode="light"]{
+    --metal-top:#ffffff; --metal-bottom:#e8ecf2;
+    --header-text:#14212c;
+    --text-main:#16202b; --text-light:#5a6b7a;
+    --window-bg:#f2f5f9;
+    --inset-bg:#ffffff;
+    --track-bg:#e2e8f0;
+    --success:#0f8a5f; --danger:#b3261e;
+    --canvas-toolbar-bg: linear-gradient(to right, rgba(255,255,255,0.62), rgba(255,255,255,0.44), rgba(255,255,255,0.44));
+    --canvas-toolbar-border: rgba(20,33,44,0.14);
+    --neutral-surface: color-mix(in srgb, var(--text-main) 5%, #ffffff);
+    --neutral-surface-hover: color-mix(in srgb, var(--text-main) 9%, #ffffff);
+    --neutral-surface-press: color-mix(in srgb, var(--text-main) 3%, #ffffff);
+    --neutral-border: color-mix(in srgb, var(--text-main) 14%, transparent);
+    --selected-surface:#14212c;
+    --selected-fg:#ffffff;
+}
+
+/* ── Widget palette ──────────────────────────────────────────────────────────
+   The desktop's widget-palette ramp (viewbox-canvas.css), carried over so the
+   phone's baked-in widgets are the same colour family as the ones the director
+   is looking at. Each widget holds a --pal-step; the family is two anchors and
+   a card's colour is those two mixed at its step. Steps match the desktop's
+   exactly (leaderboard 1, health 2, bout order 6) so the two screens agree
+   card for card. Mixed in oklab, not sRGB, which dips through muddy grey
+   between saturated anchors. ── */
+html[data-widget-palette="cobalt"]{
+    --pal-wash-a: rgba(44,112,206,0.46);  --pal-wash-b: rgba(78,58,196,0.46);
+    --pal-top-a:#040814;  --pal-top-b:#07051a;
+    --pal-mid-a:#0a1330;  --pal-mid-b:#100c33;
+    --pal-bot-a:#12234c;  --pal-bot-b:#1c1654;
+    --pal-hair: rgba(162,192,246,0.16);
+    --pal-ink:#e9effd; --pal-ink-dim: rgba(198,215,248,0.62);
+    --pal-shadow: rgba(8,14,34,0.72);
+}
+html[data-widget-palette="matcha"]{
+    --pal-wash-a: rgba(106,156,52,0.46);  --pal-wash-b: rgba(22,122,104,0.46);
+    --pal-top-a:#0a1206;  --pal-top-b:#05120f;
+    --pal-mid-a:#121e0c;  --pal-mid-b:#08201b;
+    --pal-bot-a:#24381a;  --pal-bot-b:#0f3129;
+    --pal-hair: rgba(178,236,172,0.16);
+    --pal-ink:#eefae7; --pal-ink-dim: rgba(212,240,202,0.62);
+    --pal-shadow: rgba(10,26,16,0.72);
+}
+html[data-widget-palette="onyx"]{
+    --pal-wash-a: rgba(108,116,132,0.42); --pal-wash-b: rgba(46,49,58,0.42);
+    --pal-top-a:#08090b;  --pal-top-b:#050506;
+    --pal-mid-a:#14161a;  --pal-mid-b:#0d0e11;
+    --pal-bot-a:#262a33;  --pal-bot-b:#17191f;
+    --pal-hair: rgba(214,222,236,0.14);
+    --pal-ink:#f2f4f8; --pal-ink-dim: rgba(212,219,232,0.62);
+    --pal-shadow: rgba(6,8,12,0.72);
+}
+html[data-widget-palette="ember"]{
+    --pal-wash-a: rgba(198,126,24,0.46);  --pal-wash-b: rgba(182,50,42,0.46);
+    --pal-top-a:#120c03;  --pal-top-b:#130504;
+    --pal-mid-a:#1e1408;  --pal-mid-b:#200a08;
+    --pal-bot-a:#3b2a10;  --pal-bot-b:#3d1611;
+    --pal-hair: rgba(248,198,152,0.16);
+    --pal-ink:#fdf1e4; --pal-ink-dim: rgba(246,218,190,0.62);
+    --pal-shadow: rgba(34,14,8,0.72);
+}
+.pool-widget-leaderboard{ --pal-step:1; }
+.pool-widget-health{ --pal-step:2; }
+.pool-widget-boutorder{ --pal-step:6; }
+html:not([data-widget-palette="standard"]) .pool-widget{
+    --pal-mix: calc(var(--pal-step, 0) * 12.5%);
+    --pal-wash-c: color-mix(in oklab, var(--pal-wash-b) var(--pal-mix), var(--pal-wash-a));
+    --pal-top-c:  color-mix(in oklab, var(--pal-top-b)  var(--pal-mix), var(--pal-top-a));
+    --pal-mid-c:  color-mix(in oklab, var(--pal-mid-b)  var(--pal-mix), var(--pal-mid-a));
+    --pal-bot-c:  color-mix(in oklab, var(--pal-bot-b)  var(--pal-mix), var(--pal-bot-a));
+    /* The ramp is dark by design in every family, so the widgets keep their
+       own ink rather than following light mode — same as the desktop, where
+       a palette overrides the card and Viewbox Mode never touches it. */
+    --text-main: var(--pal-ink);
+    --text-light: var(--pal-ink-dim);
+    --canvas-toolbar-border: var(--pal-hair);
+    /* Set on the card itself, not just as a token: anything inside that simply
+       inherits `color` (rather than naming --text-main) would otherwise keep
+       the page's ink and go dark-on-dark the moment light mode is on. */
+    color: var(--pal-ink);
+    background:
+        linear-gradient(to left, transparent 14%, var(--pal-wash-c) 100%),
+        linear-gradient(to bottom, var(--pal-top-c) 0%, var(--pal-mid-c) 55%, var(--pal-bot-c) 100%);
+    background-origin: border-box;
+    backdrop-filter:none; -webkit-backdrop-filter:none;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 8px 24px -12px var(--pal-shadow);
+}
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;}
 body{
@@ -63,6 +156,16 @@ strong, b{ font-weight:var(--font-weight-heading); }
    WebGL animation) ───────────────────────────────────────────────────────── */
 body[data-vantage-background="onyx-smoke"]{
     background:#000 url('./assets/onyx-smoke.jpg') center/cover fixed no-repeat;
+}
+body[data-vantage-background="light"]{
+    /* Colour named as well as the gradients: the shorthand would otherwise
+       reset background-color to transparent and let the black from the base
+       body rule show through wherever the gradients don't paint. */
+    background-color:#eef2f7;
+    background-image:
+        radial-gradient(120% 90% at 50% -10%, #ffffff 0%, rgba(255,255,255,0) 60%),
+        linear-gradient(180deg, #f4f7fb 0%, #e6ebf3 100%);
+    background-attachment:fixed;
 }
 
 /* ── App shell: pool floats on top, footer pinned ───────────────────────────── */
@@ -193,45 +296,47 @@ input[type="text"]:focus,
     pointer-events:none;
 }
 .ref-footer > *{ pointer-events:auto; }
-.ref-icon-btn{
-    width:44px; height:44px; display:inline-flex; align-items:center; justify-content:center;
-    border:none; background:transparent; box-shadow:none; padding:0;
-    color: rgba(255, 255, 255, 0.88);
-    cursor:pointer; border-radius:0;
-    transition:color .18s ease, filter .18s ease, transform .12s ease;
+/* Primary footer action. The bout flow used to hide behind a stopwatch glyph,
+   which is the one control a referee reaches for every few minutes — it says
+   what it does now. */
+.ref-ref-bout-btn{
+    display:inline-flex; align-items:center; gap:9px;
+    padding:12px 20px; border:none; border-radius:999px; cursor:pointer;
+    background:var(--selected-surface); color:var(--selected-fg);
+    font-family:var(--font-ui); font-size:14px; font-weight:var(--font-weight-heading);
+    box-shadow:0 6px 18px rgba(0,0,0,0.32);
+    transition:filter .15s ease, transform .12s ease;
+    -webkit-tap-highlight-color:transparent;
 }
-.ref-icon-btn:hover{
-    color:#fff;
-    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.35));
+.ref-ref-bout-btn svg{ width:18px; height:18px; display:block; }
+.ref-ref-bout-btn:hover{ filter:brightness(0.94); }
+.ref-ref-bout-btn:active{ transform:translateY(1px); }
+.ref-ref-bout-btn.is-active{ box-shadow:0 0 0 2px color-mix(in srgb, var(--selected-surface) 45%, transparent), 0 6px 18px rgba(0,0,0,0.32); }
+
+/* Dark/light switch. A real two-state track rather than a cycling icon, so
+   which mode you are in is readable without tapping it — the knob sits under
+   the icon for the mode currently showing. */
+.ref-mode-switch{
+    position:relative; display:inline-flex; align-items:center; gap:0;
+    padding:3px; border-radius:999px; cursor:pointer;
+    background:color-mix(in srgb, var(--text-main) 12%, transparent);
+    border:1px solid var(--canvas-toolbar-border);
+    -webkit-tap-highlight-color:transparent;
 }
-.ref-icon-btn:active{ transform:translateY(1px); filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.22)); }
-.ref-icon-btn.is-active{ color:#fff; filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.4)); }
-.ref-icon-btn svg{ width:22px; height:22px; display:block; }
-.ref-dot-switcher{
-    display:flex; align-items:center; gap:12px; padding:0;
+.ref-mode-switch-knob{
+    position:absolute; top:3px; left:3px; width:34px; height:34px; border-radius:999px;
+    background:var(--selected-surface);
+    transition:transform .22s cubic-bezier(0.175,0.885,0.32,1.12);
 }
-.ref-dot{
-    --pool-dot-spring: cubic-bezier(0.175, 0.885, 0.32, 1.12);
-    width:11px; height:11px; border-radius:9999px; border:0; padding:0; cursor:pointer;
-    background: rgba(255, 255, 255, 0.35);
-    color: #1a1a1a;
-    box-shadow: none;
-    transition:
-        width 0.42s var(--pool-dot-spring),
-        background-color 0.28s ease,
-        filter 0.2s ease;
+html[data-mode="light"] .ref-mode-switch-knob{ transform:translateX(34px); }
+.ref-mode-switch-ico{
+    position:relative; z-index:1; width:34px; height:34px;
+    display:inline-flex; align-items:center; justify-content:center;
+    color:var(--text-light); transition:color .18s ease;
 }
-.ref-dot:hover:not(.active){
-    background: rgba(255, 255, 255, 0.52);
-    filter: none;
-}
-.ref-dot.active{
-    width:30px;
-    background: #f0f0f0;
-    box-shadow: none;
-    filter: none;
-    cursor: default;
-}
+.ref-mode-switch-ico svg{ width:17px; height:17px; display:block; }
+html:not([data-mode="light"]) .ref-mode-switch-ico[data-mode="dark"],
+html[data-mode="light"] .ref-mode-switch-ico[data-mode="light"]{ color:var(--selected-fg); }
 
 /* ── Baked-in pool widgets — same rail-card language as the pool card
    itself (left rail with icon + vertical label, glass body). ─────────────── */
@@ -267,10 +372,19 @@ input[type="text"]:focus,
 .pool-ring-svg{ display:block; }
 .pool-ring-track{ stroke:color-mix(in srgb,var(--text-main) 12%, transparent); }
 .pool-ring-fill{ stroke:#fdfdfd; transition:stroke-dashoffset 1.1s cubic-bezier(0.22,1,0.36,1); }
-.pool-ring-hero-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; text-align:center; pointer-events:none; }
-.pool-ring-hero-big{ font-family:var(--font-scoreboard); letter-spacing:var(--scoreboard-tracking); font-size:28.8px; line-height:1; font-weight:400; color:var(--text-main); text-shadow:0 1px 3px rgba(0,0,0,0.35); }
+.pool-ring-hero-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; text-align:center; pointer-events:none; padding:0 18px; }
+/* The count is the widest thing inside the ring and it grows a digit at a
+   time (9/10 → 10/21 → 21/28). Sized in ch off the scoreboard face and capped,
+   so a 5-character count stays clear of the stroke instead of crowding it, and
+   the label keeps its own line at every pool size. */
+.pool-ring-hero-big{
+    font-family:var(--font-scoreboard); letter-spacing:var(--scoreboard-tracking);
+    font-size:clamp(17px, 3.2ch, 26px); line-height:1.05; font-weight:400;
+    color:var(--text-main); font-variant-numeric:tabular-nums;
+    max-width:100%; white-space:nowrap; text-shadow:0 1px 3px rgba(0,0,0,0.35);
+}
 .pool-ring-hero-complete{ color:#ffce5a; }
-.pool-ring-hero-label{ font-size:7.65px; letter-spacing:0.14em; text-transform:uppercase; color:var(--text-light); margin-top:2px; }
+.pool-ring-hero-label{ font-size:7.65px; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-light); margin-top:3px; line-height:1.2; }
 .pool-leaderboard{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; }
 .pool-lb-row{
     display:grid; grid-template-columns:22px minmax(0,1fr) auto auto auto; align-items:center; gap:9px;
@@ -291,44 +405,56 @@ input[type="text"]:focus,
 .pool-widget-body-empty{ display:flex; align-items:center; justify-content:center; }
 .pool-lb-empty{ margin:0; padding:0 12px; font-size:12px; font-style:italic; color:var(--text-light); text-align:center; }
 
-/* ── Bout Order widget: tappable list of the standard bout sequence ─────────── */
-.pool-widget-boutorder .bo-body{ padding:8px 8px 10px; }
-.bout-order-list{ display:flex; flex-direction:column; gap:6px; }
-.bout-order-item{
-    display:flex; align-items:center; gap:10px; width:100%; text-align:left;
-    padding:11px 12px; border-radius:12px; cursor:pointer;
-    background:var(--neutral-surface); border:1px solid var(--neutral-border);
-    color:var(--text-main); font-family:var(--font-ui); min-width:0;
+/* ── Bout Order widget ───────────────────────────────────────────────────────
+   The desktop's card grid (dashboard.css .pool-boutorder-*), not the phone's
+   old full-width rows: square-ish cards, last names only, position pair or
+   final score and nothing else. Each card is a <button> here — the one thing
+   the phone adds is that tapping a card opens that bout's timer, which is why
+   the grid is sized for a thumb rather than for density. ── */
+.pool-widget-boutorder .bo-body{ padding:10px 10px 12px; }
+.pool-boutorder-grid{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(112px, 1fr));
+    grid-auto-rows:minmax(min-content, auto); gap:8px; align-content:stretch;
+}
+.pool-boutorder-card{
+    display:flex; flex-direction:column; gap:4px; min-width:0; width:100%;
+    padding:8px 9px 9px; border-radius:9px; text-align:left; cursor:pointer;
+    background:color-mix(in srgb, var(--text-main) 4%, transparent);
+    border:1px solid color-mix(in srgb, var(--text-main) 9%, transparent);
+    color:var(--text-main); font-family:var(--font-ui);
     transition:background .14s ease, transform .1s ease;
     -webkit-tap-highlight-color:transparent;
 }
-.bout-order-item:hover{ background:var(--neutral-surface-hover); }
-.bout-order-item:active{ background:var(--neutral-surface-press); transform:translateY(1px); }
-.bout-order-item.is-done{ background:transparent; border-color:color-mix(in srgb, var(--text-main) 9%, transparent); }
-.bout-order-item.is-done .bo-name{ color:var(--text-light); }
-.bo-num{
-    flex:0 0 auto; width:24px; height:24px; border-radius:7px;
-    display:inline-flex; align-items:center; justify-content:center;
-    font-family:var(--font-scoreboard); letter-spacing:-0.03em; font-size:11px;
-    color:var(--text-light); background:color-mix(in srgb, var(--text-main) 7%, transparent);
-    font-variant-numeric:tabular-nums;
+.pool-boutorder-card:hover{ background:color-mix(in srgb, var(--text-main) 8%, transparent); }
+.pool-boutorder-card:active{ transform:translateY(1px); }
+.pool-boutorder-card.is-done{
+    background:color-mix(in srgb, var(--success) 8%, transparent);
+    border-color:color-mix(in srgb, var(--success) 22%, transparent);
 }
-.bo-names{ flex:1 1 auto; min-width:0; display:flex; align-items:center; gap:7px; }
-.bo-name{
-    min-width:0; flex:1 1 0; font-size:13.5px; font-weight:var(--font-weight-strong);
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+.pbo-top{ display:flex; align-items:center; justify-content:space-between; gap:6px; }
+.pbo-num{
+    font-family:var(--font-scoreboard); font-size:10px; line-height:1; font-weight:400;
+    color:color-mix(in srgb, var(--text-main) 55%, transparent); font-variant-numeric:tabular-nums;
 }
-.bo-vs{ flex:0 0 auto; font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-light); }
-.bo-status{ flex:0 0 auto; display:inline-flex; align-items:center; gap:6px; }
-.bo-score{
-    font-family:var(--font-scoreboard); letter-spacing:-0.02em; font-size:14px;
-    color:var(--text-light); font-variant-numeric:tabular-nums; display:inline-flex; align-items:center; gap:2px;
+.pbo-pos{
+    font-family:var(--font-scoreboard); font-size:11px; font-weight:400;
+    color:color-mix(in srgb, var(--text-main) 60%, transparent); font-variant-numeric:tabular-nums;
 }
-.bo-score b{ font-weight:400; color:var(--text-main); }
-.bo-score .bo-win{ color:#ffd873; }
-.bo-dash{ color:var(--text-light); }
-.bo-check{ width:15px; height:15px; color:var(--success); }
-.bo-chevron{ width:17px; height:17px; color:var(--text-light); }
+.pbo-pos .pbo-vs{ margin:0 2px; font-size:8px; color:color-mix(in srgb, var(--text-main) 38%, transparent); text-transform:uppercase; }
+.pbo-result{
+    font-family:var(--font-scoreboard); font-size:12px; letter-spacing:0.01em; font-weight:400;
+    color:color-mix(in srgb, var(--text-main) 60%, transparent); font-variant-numeric:tabular-nums;
+}
+.pbo-result b{ font-weight:400; }
+.pbo-result b.is-win{ color:var(--success); }
+.pbo-result .pbo-dash{ margin:0 1px; color:color-mix(in srgb, var(--text-main) 35%, transparent); }
+.pbo-names{ display:flex; flex-direction:column; gap:1px; min-width:0; }
+.pbo-name{
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    font-family:var(--font-ui); font-size:11px; font-weight:var(--font-weight-strong);
+    line-height:1.25; color:color-mix(in srgb, var(--text-main) 82%, transparent);
+}
+.pbo-name.is-win{ color:var(--text-main); font-weight:var(--font-weight-display); }
 
 /* ── Bout flow: picker sheet → timer → confirm ──────────────────────────────── */
 .ref-overlay{ position:fixed; inset:0; z-index:70; display:flex; opacity:0; pointer-events:none; transition:opacity .2s ease; }
@@ -368,6 +494,11 @@ input[type="text"]:focus,
 .rbtn-white{ background:var(--selected-surface); color:var(--selected-fg); border:none; }
 .rbtn-white:hover{ background:#efefef; }
 .rbtn-white:active{ background:#d8d8d8; }
+/* Backing out of a bout — solid red rather than a neutral ghost, since it is
+   the one action here that throws work away. */
+.rbtn-danger{ background:var(--danger); color:#ffffff; border:none; }
+.rbtn-danger:hover{ background:var(--danger); filter:brightness(1.08); }
+.rbtn-danger:active{ filter:brightness(0.92); transform:translateY(1px); }
 .rbtn:disabled{ opacity:0.45; }
 /* Glass-outline recipe — same frosted-toolbar material as the app's other
    glass surfaces (fencer cards, header), used here for Reset so it reads
@@ -398,9 +529,12 @@ input[type="text"]:focus,
 .ref-stage.is-hidden{ display:none; }
 .ref-timer-top{ display:flex; align-items:center; justify-content:space-between; padding:14px 18px; color:var(--text-light); font-size:13px; font-weight:var(--font-weight-heading); }
 .ref-timer-top .x{ cursor:pointer; }
+/* Abandoning a bout mid-clock is destructive and used to be floating text at
+   the screen edge — it is a real button with a real target now. */
+.ref-timer-cancel{ flex:0 0 auto; padding:9px 18px; font-size:13px; }
 .ref-timer-main{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
 .ref-timer-center{ flex:0 0 auto; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-.ref-timer-clock{ font-family:var(--font-scoreboard); letter-spacing:var(--scoreboard-tracking); font-weight:400; font-size:clamp(64px,20vw,116px); line-height:1; text-align:center; color:var(--text-main); font-variant-numeric:tabular-nums; margin:2px 0; }
+.ref-timer-clock{ font-family:var(--font-scoreboard); letter-spacing:var(--scoreboard-tracking); font-weight:400; font-size:clamp(70px,22vw,128px); line-height:1; text-align:center; color:var(--text-main); font-variant-numeric:tabular-nums; margin:2px 0; }
 .ref-timer-clock.warn{ color:#ffce5a; } .ref-timer-clock.done{ color:var(--danger); }
 /* Period / break status under the clock, and the DE weapon-format picker. */
 .ref-timer-status{ margin-top:4px; text-align:center; font-size:12px; font-weight:var(--font-weight-heading); letter-spacing:0.02em; color:var(--text-light); min-height:15px; }
@@ -418,25 +552,40 @@ input[type="text"]:focus,
     .ref-timer-weapon{ padding:0 18px calc(8px + env(safe-area-inset-bottom)); }
     .ref-timer-status{ font-size:11px; margin-top:2px; }
 }
-/* Single shared control row — sits directly under the fencers+clock row in
-   both orientations. Left→right: Reset (icon), Double (DB), Start, Finish.
-   Sized to stay on one line on a narrow phone, never hanging off the edge. */
-.ref-timer-controls{ display:flex; gap:8px; justify-content:center; align-items:stretch; padding:8px 10px 16px; flex-wrap:nowrap; }
-.ref-timer-controls .rbtn{ flex:0 1 auto; min-width:0; padding:12px 14px; font-size:14px; white-space:nowrap; }
-/* Compact fixed-width icon / short-label buttons so the two text buttons get
-   the room. */
-.ref-timer-controls .rbtn-compact{ flex:0 0 auto; width:48px; padding:0; display:inline-flex; align-items:center; justify-content:center; }
-.ref-timer-controls .rbtn-compact svg{ width:20px; height:20px; display:block; }
-.ref-timer-controls #t-startpause{ flex:0 1 auto; }
-.ref-fencers{ flex:1 1 auto; display:flex; gap:12px; padding:10px 16px; min-height:0; }
+/* Control block. Start is the control that gets hit on every touch scored, so
+   it is a card-sized tap target rather than one button among four equals; the
+   double-touch button stands beside it because it is the other in-bout action.
+   Reset and Finish share the row underneath — reachable, but not where a thumb
+   lands by accident mid-bout. */
+.ref-timer-controls{
+    display:grid; grid-template-columns:82px 1fr;
+    grid-template-areas:"db start" "under under";
+    gap:9px; padding:8px 12px 16px; align-items:stretch;
+}
+.ref-timer-controls .rbtn{ min-width:0; padding:12px 14px; font-size:14px; white-space:nowrap; }
+.ref-timer-controls #t-double{
+    grid-area:db; display:inline-flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    padding:0; font-size:19px; line-height:1;
+}
+.ref-timer-controls #t-double small{ font-size:9px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-light); }
+.ref-timer-controls #t-startpause{
+    grid-area:start; min-height:104px; border-radius:16px;
+    font-size:23px; font-weight:var(--font-weight-display); letter-spacing:0.01em;
+}
+.ref-timer-controls .ref-timer-under{ grid-area:under; display:flex; gap:9px; }
+.ref-timer-controls .ref-timer-under .rbtn{ flex:1 1 0; }
+/* Width is right; the height was inherited from when these cards owned the
+   screen. Fitted to their content now (they hold a name, a score and two
+   buttons) so the giant Start block below has room without scrolling. */
+.ref-fencers{ flex:0 0 auto; display:flex; gap:12px; padding:8px 16px; min-height:0; }
 .ref-fencer{
-    flex:1 1 0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+    flex:1 1 0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
     border-radius:16px;
     background: var(--canvas-toolbar-bg);
     backdrop-filter: var(--viewbox-body-card-blur);
     -webkit-backdrop-filter: var(--viewbox-body-card-blur);
     border: 1px solid var(--canvas-toolbar-border);
-    padding:18px 10px; min-width:0;
+    padding:10px 10px 12px; min-width:0;
 }
 /* Fencing-box color coding: left = red, right = green — same in portrait
    and landscape. */
@@ -444,7 +593,7 @@ input[type="text"]:focus,
 #tfencer-1{ border-color:var(--success); }
 .ref-fencer.is-leading .ref-fencer-score{ color:#ffd873; }
 .ref-fencer-name{ font-size:15px; font-weight:var(--font-weight-heading); color:var(--text-main); text-align:center; word-break:break-word; }
-.ref-fencer-score{ font-family:var(--font-scoreboard); letter-spacing:var(--scoreboard-tracking); font-weight:400; font-size:76px; line-height:1; color:var(--text-main); transition:color .15s ease; }
+.ref-fencer-score{ font-family:var(--font-scoreboard); letter-spacing:var(--scoreboard-tracking); font-weight:400; font-size:60px; line-height:1; color:var(--text-main); transition:color .15s ease; }
 .ref-touch-btns{ display:flex; gap:10px; align-items:center; }
 .touch-btn{ width:54px; height:54px; border-radius:14px; font-size:28px; font-weight:400; display:flex; align-items:center; justify-content:center; border:none; background:var(--neutral-surface); color:var(--text-main); cursor:pointer; transition:background .15s ease; }
 .touch-btn:hover{ background:var(--neutral-surface-hover); }
@@ -463,7 +612,10 @@ input[type="text"]:focus,
     .ref-timer-main{ flex-direction:row; align-items:center; gap:14px; padding:0 14px; }
     .ref-timer-center{ order:2; flex:1 1 auto; min-width:0; }
     .ref-timer-clock{ font-size:clamp(48px,10vw,88px); }
-    .ref-timer-controls{ padding:6px 18px 10px; }
+    /* Short viewport: the Start card keeps its priority but gives back the
+       height it does not need, so the fencer cards and clock still fit. */
+    .ref-timer-controls{ padding:6px 18px 10px; gap:7px; grid-template-columns:70px 1fr; }
+    .ref-timer-controls #t-startpause{ min-height:56px; font-size:19px; }
     .ref-fencers{ display:contents; }
     .ref-fencer{
         flex:0 0 auto; align-self:center;
@@ -571,13 +723,19 @@ input[type="text"]:focus,
         </main>
     </div>
     <footer class="ref-footer">
-        <button type="button" class="ref-icon-btn" id="timer-btn" title="Start bout" aria-label="Start bout">
+        <button type="button" class="ref-ref-bout-btn" id="timer-btn" title="Ref a bout">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></svg>
+            <span>Ref a Bout</span>
         </button>
-        <div class="ref-dot-switcher" id="dot-switcher" role="tablist" aria-label="Pools or bout">
-            <button type="button" class="ref-dot active" data-page="pools" role="tab" aria-selected="true" title="Pool sheet" aria-label="Pool sheet"></button>
-            <button type="button" class="ref-dot" data-page="bout" role="tab" aria-selected="false" title="Active bout" aria-label="Active bout"></button>
-        </div>
+        <button type="button" class="ref-mode-switch" id="mode-switch" role="switch" aria-checked="false" aria-label="Light mode">
+            <span class="ref-mode-switch-knob" aria-hidden="true"></span>
+            <span class="ref-mode-switch-ico" data-mode="dark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+            </span>
+            <span class="ref-mode-switch-ico" data-mode="light" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+            </span>
+        </button>
     </footer>
 
     <div class="ref-toast" id="ref-toast"></div>
@@ -715,8 +873,12 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
         }).join('');
 
         const poolNo = (SESSION.poolIndex||0)+1;
+        /* The rail is 52px wide, so it carries the strip as S# and nothing
+           else — a desktop label like "Strip 3" or "Piste 3" is reduced to its
+           number rather than wrapped or clipped. */
         const stripRaw = SESSION.strip ? String(SESSION.strip).trim() : '';
-        const stripLabel = stripRaw ? (/^\d+$/.test(stripRaw) ? `S${stripRaw}` : stripRaw) : `S${poolNo}`;
+        const stripDigits = stripRaw.match(/\d+/);
+        const stripLabel = `S${stripDigits ? stripDigits[0] : poolNo}`;
         const weapon = SESSION.weapon ? String(SESSION.weapon).trim() : '';
         stage.innerHTML = `
             <div class="ref-content">
@@ -826,6 +988,18 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
         else if(mi>mj) win=i; else if(mj>mi) win=j;
         return { mi, mj, win };
     }
+    /* Last name only, uppercased — the desktop widget's convention. A card
+       this size cannot hold "SMITH-JONES, Alexander" and the surname is what a
+       referee calls across a strip anyway. Duplicate surnames keep the seed
+       tag rosterLabel() adds, so two SMITHs stay distinguishable. */
+    function boutOrderCardName(i){
+        const label = rosterLabel(i);
+        const tag = label.match(/\s\(#\d+\)$/);
+        const base = tag ? label.slice(0, tag.index) : label;
+        const parts = String(base).trim().split(/\s+/);
+        const last = parts.length > 1 ? parts[parts.length-1] : (parts[0]||'');
+        return (last + (tag ? tag[0] : '')).toUpperCase();
+    }
     function renderBoutOrderWidget(){
         const n=ROSTER.length;
         const items=getPoolBoutOrder(n).map(([pa,pb],idx)=>{
@@ -833,17 +1007,19 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
             if(i<0||j<0||i>=n||j>=n) return '';
             const sc=boutOrderScore(i,j);
             const done=!!sc;
-            const nameI=esc(rosterLabel(i)), nameJ=esc(rosterLabel(j));
-            const status=done
-                ? `<span class="bo-score"><b class="${sc.win===i?'bo-win':''}">${sc.mi}</b><span class="bo-dash">–</span><b class="${sc.win===j?'bo-win':''}">${sc.mj}</b></span>${svgIcon(ICON.check,'bo-check')}`
-                : svgIcon(ICON.chevron,'bo-chevron');
-            return `<button type="button" class="bout-order-item${done?' is-done':''}" data-bout-a="${i}" data-bout-b="${j}">
-                <span class="bo-num">${idx+1}</span>
-                <span class="bo-names"><span class="bo-name">${nameI}</span><span class="bo-vs">vs</span><span class="bo-name">${nameJ}</span></span>
-                <span class="bo-status">${status}</span>
+            const nameI=esc(boutOrderCardName(i)), nameJ=esc(boutOrderCardName(j));
+            const result=done
+                ? `<span class="pbo-result"><b class="${sc.win===i?'is-win':''}">${sc.mi}</b><span class="pbo-dash">–</span><b class="${sc.win===j?'is-win':''}">${sc.mj}</b></span>`
+                : `<span class="pbo-pos">${pa}<span class="pbo-vs">v</span>${pb}</span>`;
+            return `<button type="button" class="pool-boutorder-card${done?' is-done':''}" data-bout-a="${i}" data-bout-b="${j}" title="Bout ${idx+1}: ${esc(rosterLabel(i))} vs ${esc(rosterLabel(j))}">
+                <span class="pbo-top"><span class="pbo-num">${idx+1}</span>${result}</span>
+                <span class="pbo-names">
+                    <span class="pbo-name${done&&sc.win===i?' is-win':''}">${nameI}</span>
+                    <span class="pbo-name${done&&sc.win===j?' is-win':''}">${nameJ}</span>
+                </span>
             </button>`;
         }).join('');
-        return `<section class="pool-widget pool-widget-boutorder"><div class="pool-widget-rail"><div class="pool-widget-rail-icons">${svgIcon(ICON.updown)}</div><span class="pool-widget-rail-label">Bout Order</span></div><div class="pool-widget-main"><div class="pool-widget-body bo-body"><div class="bout-order-list">${items}</div></div></div></section>`;
+        return `<section class="pool-widget pool-widget-boutorder"><div class="pool-widget-rail"><div class="pool-widget-rail-icons">${svgIcon(ICON.updown)}</div><span class="pool-widget-rail-label">Bout Order</span></div><div class="pool-widget-main"><div class="pool-widget-body bo-body"><div class="pool-boutorder-grid">${items}</div></div></div></section>`;
     }
 
     function renderWidgets(){
@@ -863,7 +1039,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
         const standings=`<section class="pool-widget pool-widget-leaderboard"><div class="pool-widget-rail"><div class="pool-widget-rail-icons">${svgIcon(ICON.trend)}</div><span class="pool-widget-rail-label">Pool ${poolNo} Standings</span></div><div class="pool-widget-main"><div class="pool-widget-body${anyBouts?'':' pool-widget-body-empty'}">${board}</div></div></section>`;
         // Bout Order sits directly under the pool card, before the stat widgets.
         host.innerHTML = renderBoutOrderWidget() + health + standings;
-        host.querySelectorAll('.bout-order-item').forEach(btn=>{
+        host.querySelectorAll('.pool-boutorder-card').forEach(btn=>{
             btn.addEventListener('click', ()=> openTimer(+btn.dataset.boutA, +btn.dataset.boutB));
         });
     }
@@ -1066,7 +1242,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
                         ${ready.map(mt=>`<button type="button" class="de-pick" data-a="${mt.a}" data-b="${mt.b}"><span class="de-pick-round">${esc(mt.round)}</span><span class="de-pick-names">${esc(rosterLabel(mt.a))} vs ${esc(rosterLabel(mt.b))}</span></button>`).join('')}
                     </div>
                     <div class="ref-btn-row">
-                        <button class="rbtn rbtn-ghost" data-close>Cancel</button>
+                        <button class="rbtn rbtn-danger" data-close>Cancel</button>
                     </div>
                 </div>
             </div></div>`;
@@ -1186,17 +1362,16 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
 
     const stageEl = document.getElementById('ref-stage');
     const timerBtn = document.getElementById('timer-btn');
-    const dotSwitcher = document.getElementById('dot-switcher');
 
     function syncPageChrome(){
-        if(dotSwitcher){
-            dotSwitcher.querySelectorAll('.ref-dot').forEach(dot=>{
-                const on = dot.dataset.page === pageMode;
-                dot.classList.toggle('active', on);
-                dot.setAttribute('aria-selected', on ? 'true' : 'false');
-            });
+        if(timerBtn){
+            timerBtn.classList.toggle('is-active', pageMode === 'bout' && !!timerEl);
+            /* One button, two jobs: it opens the picker when no bout is up,
+               and returns to the bout already on the clock when there is one. */
+            const live = !!timerEl;
+            timerBtn.querySelector('span').textContent = live ? 'Back to Bout' : 'Ref a Bout';
+            timerBtn.title = live ? 'Back to the bout in progress' : 'Ref a bout';
         }
-        if(timerBtn) timerBtn.classList.toggle('is-active', pageMode === 'bout' && !!timerEl);
         if(stageEl) stageEl.classList.toggle('is-hidden', pageMode === 'bout' && !!timerEl && !timerEl.classList.contains('is-parked'));
     }
 
@@ -1226,11 +1401,35 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
         openBoutPicker();
     }
 
-    if(dotSwitcher){
-        dotSwitcher.querySelectorAll('.ref-dot').forEach(dot=>{
-            dot.addEventListener('click', ()=> setPage(dot.dataset.page));
+    /* ---- dark / light switch ---- */
+    const MODE_KEY = 'vantage-ref-mode';
+    const modeSwitch = document.getElementById('mode-switch');
+    function applyMode(mode){
+        const light = mode === 'light';
+        document.documentElement.setAttribute('data-mode', light ? 'light' : 'dark');
+        /* The onyx-smoke photo is a dark-room backdrop; light mode drops it for
+           a plain light field rather than fighting it with a wash. */
+        document.body.setAttribute('data-vantage-background', light ? 'light' : 'onyx-smoke');
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', light ? '#f2f5f9' : '#000000');
+        if(modeSwitch){
+            modeSwitch.setAttribute('aria-checked', light ? 'true' : 'false');
+            modeSwitch.setAttribute('aria-label', light ? 'Switch to dark mode' : 'Switch to light mode');
+        }
+        try{ localStorage.setItem(MODE_KEY, light ? 'light' : 'dark'); }catch(e){}
+    }
+    if(modeSwitch){
+        modeSwitch.addEventListener('click', ()=>{
+            applyMode(document.documentElement.getAttribute('data-mode') === 'light' ? 'dark' : 'light');
         });
     }
+    (function initMode(){
+        let stored = null;
+        try{ stored = localStorage.getItem(MODE_KEY); }catch(e){}
+        if(stored !== 'light' && stored !== 'dark'){
+            stored = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        }
+        applyMode(stored);
+    })();
 
     function showOverlay(el){ document.body.appendChild(el); requestAnimationFrame(()=> el.classList.add('open')); }
     function closeOverlay(el){ el.classList.remove('open'); setTimeout(()=>{ if(el.parentNode) el.parentNode.removeChild(el); }, 220); }
@@ -1274,7 +1473,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
                         <div class="bout-pick-col"><span class="bout-pick-label">Opponent</span><select class="bout-select" id="pick-b"></select></div>
                     </div>
                     <div class="ref-btn-row">
-                        <button class="rbtn rbtn-ghost" data-close>Cancel</button>
+                        <button class="rbtn rbtn-danger" data-close>Cancel</button>
                         <button class="rbtn" id="pick-start">Start timer</button>
                     </div>
                 </div>
@@ -1321,7 +1520,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
                 </div>
             </div>` : '';
         ov.innerHTML = `
-            <div class="ref-timer-top"><span class="x" data-abort>✕ Cancel</span><span>${esc(topLabel)}</span></div>
+            <div class="ref-timer-top"><button type="button" class="rbtn rbtn-danger ref-timer-cancel" data-abort>Cancel</button><span>${esc(topLabel)}</span></div>
             <div class="ref-timer-main">
                 <div class="ref-timer-center">
                     <div class="ref-timer-clock" id="tclock">3:00</div>
@@ -1340,12 +1539,12 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
                 </div>
             </div>
             <div class="ref-timer-controls">
-                <button class="rbtn rbtn-glass rbtn-compact" id="t-reset" aria-label="Reset timer" title="Reset">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-                </button>
-                <button class="rbtn rbtn-glass rbtn-compact" id="t-double" aria-label="Double touch" title="Double touch">DB</button>
+                <button class="rbtn rbtn-glass" id="t-double" aria-label="Double touch" title="Double touch">DB<small>Double</small></button>
                 <button class="rbtn" id="t-startpause">Start</button>
-                <button class="rbtn rbtn-white" id="t-finish">Finish bout</button>
+                <div class="ref-timer-under">
+                    <button class="rbtn rbtn-glass" id="t-reset" title="Reset timer">Reset</button>
+                    <button class="rbtn rbtn-white" id="t-finish">Finish Bout</button>
+                </div>
             </div>
             ${weaponRow}`;
         const clock = ov.querySelector('#tclock');
