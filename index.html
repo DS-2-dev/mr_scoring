@@ -114,6 +114,44 @@ html[data-widget-palette="ember"]{
     --pal-ink:#fdf1e4; --pal-ink-dim: rgba(246,218,190,0.62);
     --pal-shadow: rgba(34,14,8,0.72);
 }
+/* "standard" is not the absence of colour — on the desktop it is the
+   hand-tuned set where each pool widget carries its own hue (blue standings,
+   green health, grey bout order), painted rather than sampled. Ported here
+   because leaving these as plain glass made them take whatever was behind
+   them: flat black in dark mode, flat white in light. Like the ramps below,
+   the cards are dark and carry their own ink in both modes, so a widget reads
+   the same whichever way the phone is set. */
+html[data-widget-palette="standard"] .pool-widget{
+    --pal-ink:#eef1f5;
+    --pal-ink-dim: rgba(210,217,226,0.62);
+    --pal-hair: rgba(190,201,214,0.16);
+    --text-main: var(--pal-ink);
+    --text-light: var(--pal-ink-dim);
+    --canvas-toolbar-border: var(--pal-hair);
+    color: var(--pal-ink);
+    background-origin: border-box;
+    border-color: rgba(255,255,255,0.09);
+    backdrop-filter:none; -webkit-backdrop-filter:none;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 8px 24px -12px rgba(8,10,14,0.72);
+}
+html[data-widget-palette="standard"] .pool-widget-leaderboard{
+    --pal-ink:#e9f0fc; --pal-ink-dim: rgba(197,216,245,0.62); --pal-hair: rgba(158,191,240,0.16);
+    background:
+        linear-gradient(to left, transparent 14%, rgba(48,102,190,0.46) 100%),
+        linear-gradient(to bottom, #050a13 0%, #0a1424 55%, #10203a 100%);
+}
+html[data-widget-palette="standard"] .pool-widget-health{
+    --pal-ink:#e9fcf2; --pal-ink-dim: rgba(197,245,219,0.62); --pal-hair: rgba(158,240,196,0.16);
+    background:
+        linear-gradient(to left, transparent 14%, rgba(32,122,78,0.48) 100%),
+        linear-gradient(to bottom, #050f0b 0%, #0a1a13 55%, #10281d 100%);
+}
+html[data-widget-palette="standard"] .pool-widget-boutorder{
+    background:
+        linear-gradient(to left, transparent 14%, rgba(122,134,148,0.42) 100%),
+        linear-gradient(to bottom, #0a0b0d 0%, #131518 55%, #23272d 100%);
+}
+
 .pool-widget-leaderboard{ --pal-step:1; }
 .pool-widget-health{ --pal-step:2; }
 .pool-widget-boutorder{ --pal-step:6; }
@@ -331,8 +369,14 @@ html[data-mode="light"] .ref-footer{
 .ref-mode-switch{
     position:relative; display:inline-flex; align-items:center; gap:0;
     padding:3px; border-radius:999px; cursor:pointer;
-    background:color-mix(in srgb, var(--text-main) 12%, transparent);
+    /* Same glass as every other floating surface. A flat tint left the track
+       transparent, so the knob looked like it was sliding on nothing. Static
+       element, so the blur is rasterized once and costs nothing after that. */
+    background: var(--canvas-toolbar-bg);
+    backdrop-filter: blur(14px) saturate(1.04);
+    -webkit-backdrop-filter: blur(14px) saturate(1.04);
     border:1px solid var(--canvas-toolbar-border);
+    box-shadow:0 6px 18px rgba(0,0,0,0.22);
     -webkit-tap-highlight-color:transparent;
 }
 .ref-mode-switch-knob{
@@ -469,17 +513,24 @@ html[data-mode="light"] .ref-mode-switch-ico[data-mode="light"]{ color:var(--sel
 .pbo-name.is-win{ color:var(--text-main); font-weight:var(--font-weight-display); }
 
 /* ── Bout flow: picker sheet → timer → confirm ──────────────────────────────── */
-.ref-overlay{ position:fixed; inset:0; z-index:70; display:flex; opacity:0; pointer-events:none; transition:opacity .2s ease; }
-.ref-overlay.open{ opacity:1; pointer-events:auto; }
+/* Visibility, not opacity. Fading the whole overlay meant the blurred backdrop
+   inside it was composited at fractional alpha on every frame of the fade,
+   which is what made the glass arrive a beat late. Now the backdrop is
+   rasterized once at full opacity and only the sheet animates. */
+.ref-overlay{ position:fixed; inset:0; z-index:70; display:flex; visibility:hidden; pointer-events:none; transition:visibility 0s linear .22s; }
+.ref-overlay.open{ visibility:visible; pointer-events:auto; transition-delay:0s; }
 /* The blur lives on the backdrop, which never moves. It used to sit on the
    sheet itself, and a backdrop-filtered element that is also being animated
    makes the compositor re-sample everything behind it on every frame — that
    was the judder on the way up. The backdrop is static, so its blur is
    rasterized once. */
 .ref-overlay-back{
-    position:absolute; inset:0; background:rgba(0,0,0,0.5);
-    backdrop-filter:blur(14px) saturate(1.02);
-    -webkit-backdrop-filter:blur(14px) saturate(1.02);
+    position:absolute; inset:0; background:rgba(0,0,0,0.44);
+    /* 6px, not the 14 this started at: the cost of a backdrop blur scales with
+       the radius, and a phone GPU spends that on the first frame — which is
+       the delay. Enough to separate the sheet from the pool behind it. */
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
 }
 .ref-sheet-wrap{ position:relative; margin-top:auto; width:100%; display:flex; justify-content:center; }
 .ref-sheet{
@@ -539,15 +590,19 @@ html[data-mode="light"] .ref-mode-switch-ico[data-mode="light"]{ color:var(--sel
    coat (same GIC recipe as every other card/sheet), no gradient wash. */
 .ref-timer{
     position:fixed; inset:0; z-index:50;
-    background: color-mix(in srgb, var(--window-bg) 88%, transparent);
-    backdrop-filter: blur(28px) saturate(1.08);
-    -webkit-backdrop-filter: blur(28px) saturate(1.08);
+    /* Nearly opaque, so it needs only a light blur to sit over the pool sheet
+       instead of a 28px one. That blur was the other half of the delay on the
+       way into a bout — the same fractional-alpha compositing the picker had,
+       at twice the radius and full screen. */
+    background: color-mix(in srgb, var(--window-bg) 97%, transparent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     display:flex; flex-direction:column;
-    opacity:0; pointer-events:none; transition:opacity .2s ease;
+    visibility:hidden; pointer-events:none; transition:visibility 0s linear .2s;
     padding:env(safe-area-inset-top) 0 calc(72px + env(safe-area-inset-bottom));
 }
-.ref-timer.open{ opacity:1; pointer-events:auto; }
-.ref-timer.is-parked{ opacity:0; pointer-events:none; visibility:hidden; }
+.ref-timer.open{ visibility:visible; pointer-events:auto; transition-delay:0s; }
+.ref-timer.is-parked{ visibility:hidden; pointer-events:none; }
 .ref-stage.is-hidden{ display:none; }
 .ref-timer-top{ display:flex; align-items:center; justify-content:space-between; padding:14px 18px; color:var(--text-light); font-size:13px; font-weight:var(--font-weight-heading); }
 .ref-timer-top .x{ cursor:pointer; }
@@ -588,11 +643,13 @@ html[data-mode="light"] .ref-mode-switch-ico[data-mode="light"]{ color:var(--sel
     flex:1 1 auto; min-height:0;
 }
 .ref-timer-controls .rbtn{ min-width:0; padding:12px 14px; font-size:14px; white-space:nowrap; }
+/* One momentary action — it awards a touch to both fencers and returns. The
+   two-tier "DB / Double Touch" treatment read like a mode you switch on, so it
+   is a plain button the same size as Reset and Finish. */
 .ref-timer-controls #t-double{
-    flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; gap:8px;
-    padding:13px 14px; font-size:16px; line-height:1;
+    flex:0 0 auto; display:flex; align-items:center; justify-content:center;
+    padding:12px 14px; font-size:14px; line-height:1.2;
 }
-.ref-timer-controls #t-double small{ font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-light); }
 .ref-timer-controls #t-startpause{
     flex:1 1 auto; min-height:132px; border-radius:18px;
     font-size:27px; font-weight:var(--font-weight-display); letter-spacing:0.01em;
@@ -1604,7 +1661,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
             </div>
             <div class="ref-timer-controls">
                 <button class="rbtn" id="t-startpause">Start</button>
-                <button class="rbtn rbtn-glass" id="t-double" aria-label="Double touch" title="Double touch">DB<small>Double Touch</small></button>
+                <button class="rbtn rbtn-glass" id="t-double" title="Award a touch to both fencers">Double Touch</button>
                 <div class="ref-timer-under">
                     <button class="rbtn rbtn-glass" id="t-reset" title="Reset timer">Reset</button>
                     <button class="rbtn rbtn-white" id="t-finish">Finish Bout</button>
