@@ -335,12 +335,20 @@ input[type="text"]:focus,
         linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.18) 46%, rgba(0,0,0,0.52) 100%);
     pointer-events:none;
 }
-/* Light mode needs the mirror of that scrim — a black fade over a light page
-   would be the very slab this is avoiding. */
-html[data-mode="light"] .ref-footer{
-    background-image:
-        radial-gradient(125% 100% at 50% 118%, rgba(240,244,249,0.86) 0%, rgba(240,244,249,0.5) 42%, transparent 76%),
-        linear-gradient(180deg, transparent 0%, rgba(240,244,249,0.42) 46%, rgba(240,244,249,0.86) 100%);
+/* Light mode: a darkening scrim has nothing to darken here, and painting the
+   mirror of it in near-white just laid a milky band across the page. What
+   separates the controls on a light background is glass, so this is a blurred
+   layer masked to fade out before its top edge — the tint is only enough to
+   keep the pill's edge from dissolving into the content behind it. The layer
+   is static, so the blur is rasterized once. */
+html[data-mode="light"] .ref-footer{ background-image:none; }
+html[data-mode="light"] .ref-footer::before{
+    content:''; position:absolute; inset:0; z-index:-1; pointer-events:none;
+    backdrop-filter: blur(12px) saturate(1.03);
+    -webkit-backdrop-filter: blur(12px) saturate(1.03);
+    background: linear-gradient(180deg, transparent 0%, rgba(246,249,252,0.30) 55%, rgba(246,249,252,0.55) 100%);
+    mask-image: linear-gradient(to top, #000 46%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to top, #000 46%, transparent 100%);
 }
 .ref-footer > *{ pointer-events:auto; }
 /* Primary footer action. The bout flow used to hide behind a stopwatch glyph,
@@ -369,12 +377,13 @@ html[data-mode="light"] .ref-footer{
 .ref-mode-switch{
     position:relative; display:inline-flex; align-items:center; gap:0;
     padding:3px; border-radius:999px; cursor:pointer;
-    /* Same glass as every other floating surface. A flat tint left the track
-       transparent, so the knob looked like it was sliding on nothing. Static
-       element, so the blur is rasterized once and costs nothing after that. */
+    /* Same glass as every other floating surface, straight off the shared
+       token — a flat tint left the track transparent, so the knob looked like
+       it was sliding on nothing. Static element, so the blur is rasterized
+       once and costs nothing after that. */
     background: var(--canvas-toolbar-bg);
-    backdrop-filter: blur(14px) saturate(1.04);
-    -webkit-backdrop-filter: blur(14px) saturate(1.04);
+    backdrop-filter: var(--canvas-toolbar-blur);
+    -webkit-backdrop-filter: var(--canvas-toolbar-blur);
     border:1px solid var(--canvas-toolbar-border);
     box-shadow:0 6px 18px rgba(0,0,0,0.22);
     -webkit-tap-highlight-color:transparent;
