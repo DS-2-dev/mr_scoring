@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="omens" data-mode="dark" data-widget-palette="cobalt">
+<html lang="en" data-theme="omens" data-mode="dark" data-widget-palette="standard">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
@@ -288,12 +288,21 @@ input[type="text"]:focus,
     display:flex; align-items:center; justify-content:space-between; gap:16px;
     padding:18px 22px calc(14px + env(safe-area-inset-bottom));
     border:none; background:transparent;
+    /* No glass pane: the controls float over the content. What keeps them
+       legible is a scrim that fades to nothing well before its top edge — the
+       same trick iOS uses under a floating tab bar. A blurred pane here read as
+       a slab with a visible seam wherever the content behind it ran out. */
     background-image:
-        radial-gradient(120% 90% at 50% 120%, rgba(0, 0, 0, 0.58) 0%, rgba(0, 0, 0, 0.32) 40%, transparent 74%),
-        linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.38) 50%, rgba(0, 0, 0, 0.78) 100%);
-    backdrop-filter: blur(10px) saturate(1.02);
-    -webkit-backdrop-filter: blur(10px) saturate(1.02);
+        radial-gradient(125% 100% at 50% 118%, rgba(0,0,0,0.52) 0%, rgba(0,0,0,0.26) 42%, transparent 76%),
+        linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.18) 46%, rgba(0,0,0,0.52) 100%);
     pointer-events:none;
+}
+/* Light mode needs the mirror of that scrim — a black fade over a light page
+   would be the very slab this is avoiding. */
+html[data-mode="light"] .ref-footer{
+    background-image:
+        radial-gradient(125% 100% at 50% 118%, rgba(240,244,249,0.86) 0%, rgba(240,244,249,0.5) 42%, transparent 76%),
+        linear-gradient(180deg, transparent 0%, rgba(240,244,249,0.42) 46%, rgba(240,244,249,0.86) 100%);
 }
 .ref-footer > *{ pointer-events:auto; }
 /* Primary footer action. The bout flow used to hide behind a stopwatch glyph,
@@ -311,7 +320,10 @@ input[type="text"]:focus,
 .ref-ref-bout-btn svg{ width:18px; height:18px; display:block; }
 .ref-ref-bout-btn:hover{ filter:brightness(0.94); }
 .ref-ref-bout-btn:active{ transform:translateY(1px); }
-.ref-ref-bout-btn.is-active{ box-shadow:0 0 0 2px color-mix(in srgb, var(--selected-surface) 45%, transparent), 0 6px 18px rgba(0,0,0,0.32); }
+/* Leaving the bout screen is the destructive direction, so it reads like it —
+   same red as Cancel, which sits at the other end of that screen. */
+.ref-ref-bout-btn.is-back{ background:var(--danger); color:#ffffff; }
+.ref-ref-bout-btn.is-back:hover{ filter:brightness(1.08); }
 
 /* Dark/light switch. A real two-state track rather than a cycling icon, so
    which mode you are in is readable without tapping it — the knob sits under
@@ -459,21 +471,31 @@ html[data-mode="light"] .ref-mode-switch-ico[data-mode="light"]{ color:var(--sel
 /* ── Bout flow: picker sheet → timer → confirm ──────────────────────────────── */
 .ref-overlay{ position:fixed; inset:0; z-index:70; display:flex; opacity:0; pointer-events:none; transition:opacity .2s ease; }
 .ref-overlay.open{ opacity:1; pointer-events:auto; }
-.ref-overlay-back{ position:absolute; inset:0; background:rgba(0,0,0,0.6); }
+/* The blur lives on the backdrop, which never moves. It used to sit on the
+   sheet itself, and a backdrop-filtered element that is also being animated
+   makes the compositor re-sample everything behind it on every frame — that
+   was the judder on the way up. The backdrop is static, so its blur is
+   rasterized once. */
+.ref-overlay-back{
+    position:absolute; inset:0; background:rgba(0,0,0,0.5);
+    backdrop-filter:blur(14px) saturate(1.02);
+    -webkit-backdrop-filter:blur(14px) saturate(1.02);
+}
 .ref-sheet-wrap{ position:relative; margin-top:auto; width:100%; display:flex; justify-content:center; }
 .ref-sheet{
     position:relative; width:100%; max-width:520px;
-    background: var(--canvas-toolbar-bg);
-    backdrop-filter: var(--canvas-toolbar-blur);
-    -webkit-backdrop-filter: var(--canvas-toolbar-blur);
+    /* Opaque surface rather than glass, so the sheet is a plain layer the
+       compositor can slide without reading anything underneath it. */
+    background: color-mix(in srgb, var(--window-bg) 94%, var(--text-main));
     border: 1px solid var(--canvas-toolbar-border);
     border-bottom: none;
     border-radius:18px 18px 0 0;
     box-shadow:0 -14px 44px rgba(0,0,0,0.35);
-    transform:translateY(30px); transition:transform .22s ease;
+    transform:translate3d(0,30px,0); transition:transform .22s cubic-bezier(0.22,1,0.36,1);
+    will-change:transform;
     padding-bottom:calc(16px + env(safe-area-inset-bottom)); overflow:hidden;
 }
-.ref-overlay.open .ref-sheet{ transform:translateY(0); }
+.ref-overlay.open .ref-sheet{ transform:translate3d(0,0,0); }
 .ref-sheet-head{ background:transparent; padding:14px 18px 8px; color:var(--text-main); font-weight:var(--font-weight-heading); font-size:14px; display:flex; align-items:center; justify-content:space-between; }
 .ref-sheet-head .x{ cursor:pointer; opacity:0.6; font-size:15px; transition:opacity .15s ease; }
 .ref-sheet-head .x:hover{ opacity:1; }
@@ -558,21 +580,24 @@ html[data-mode="light"] .ref-mode-switch-ico[data-mode="light"]{ color:var(--sel
    Reset and Finish share the row underneath — reachable, but not where a thumb
    lands by accident mid-bout. */
 .ref-timer-controls{
-    display:grid; grid-template-columns:82px 1fr;
-    grid-template-areas:"db start" "under under";
-    gap:9px; padding:8px 12px 16px; align-items:stretch;
+    /* Start takes the whole width and every spare pixel of height the column
+       has left over — it is hit on every touch scored, so it is the one target
+       that should be impossible to miss. Then Double, then the row you only
+       reach for at the end of a bout. */
+    display:flex; flex-direction:column; gap:9px; padding:8px 12px 16px;
+    flex:1 1 auto; min-height:0;
 }
 .ref-timer-controls .rbtn{ min-width:0; padding:12px 14px; font-size:14px; white-space:nowrap; }
 .ref-timer-controls #t-double{
-    grid-area:db; display:inline-flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
-    padding:0; font-size:19px; line-height:1;
+    flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:13px 14px; font-size:16px; line-height:1;
 }
-.ref-timer-controls #t-double small{ font-size:9px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-light); }
+.ref-timer-controls #t-double small{ font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-light); }
 .ref-timer-controls #t-startpause{
-    grid-area:start; min-height:104px; border-radius:16px;
-    font-size:23px; font-weight:var(--font-weight-display); letter-spacing:0.01em;
+    flex:1 1 auto; min-height:132px; border-radius:18px;
+    font-size:27px; font-weight:var(--font-weight-display); letter-spacing:0.01em;
 }
-.ref-timer-controls .ref-timer-under{ grid-area:under; display:flex; gap:9px; }
+.ref-timer-controls .ref-timer-under{ flex:0 0 auto; display:flex; gap:9px; }
 .ref-timer-controls .ref-timer-under .rbtn{ flex:1 1 0; }
 /* Width is right; the height was inherited from when these cards owned the
    screen. Fitted to their content now (they hold a name, a score and two
@@ -614,8 +639,9 @@ html[data-mode="light"] .ref-mode-switch-ico[data-mode="light"]{ color:var(--sel
     .ref-timer-clock{ font-size:clamp(48px,10vw,88px); }
     /* Short viewport: the Start card keeps its priority but gives back the
        height it does not need, so the fencer cards and clock still fit. */
-    .ref-timer-controls{ padding:6px 18px 10px; gap:7px; grid-template-columns:70px 1fr; }
-    .ref-timer-controls #t-startpause{ min-height:56px; font-size:19px; }
+    .ref-timer-controls{ padding:6px 18px 10px; gap:7px; }
+    .ref-timer-controls #t-startpause{ min-height:52px; font-size:20px; }
+    .ref-timer-controls #t-double{ padding:9px 12px; font-size:14px; }
     .ref-fencers{ display:contents; }
     .ref-fencer{
         flex:0 0 auto; align-self:center;
@@ -1313,6 +1339,35 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
     }
     document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) checkPoolCompletionLock(); });
 
+    /* ---- widget palette (mirrors the director's screen) ----
+       The desktop publishes whichever palette it is running and pushes changes
+       to live sessions, so this follows along instead of being decided here.
+       'standard' is the default and means no palette at all — the widgets keep
+       the app's own glass, exactly like the desktop's standard setting. A ?wp=
+       in the QR link overrides, which is the way to test one without touching
+       the director's settings. */
+    const PALETTES = ['standard','matcha','onyx','cobalt','ember'];
+    const PALETTE_POLL_MS = 15000;
+    let palettePollTimer = null;
+    function applyWidgetPalette(next){
+        const urlOverride = params.get('wp');
+        const want = PALETTES.includes(urlOverride) ? urlOverride
+                   : (PALETTES.includes(String(next||'')) ? String(next) : 'standard');
+        if(document.documentElement.getAttribute('data-widget-palette') === want) return;
+        document.documentElement.setAttribute('data-widget-palette', want);
+    }
+    function startPalettePoll(){
+        if(palettePollTimer || params.get('wp')) return;
+        palettePollTimer = setInterval(async ()=>{
+            /* Palette only — the roster and the scores are deliberately left
+               alone, so a poll can never overwrite what a referee is typing. */
+            try{
+                const data = await rpc('session_get', { p_session_id:SESSION_ID, p_token:TOKEN });
+                if(data) applyWidgetPalette(data.widgetPalette);
+            }catch(e){ /* offline or older database — keep the current palette */ }
+        }, PALETTE_POLL_MS);
+    }
+
     /* ---- boot ---- */
     async function load(){
         if(checkPoolCompletionLock()) return; // already permanently locked from a prior visit
@@ -1323,6 +1378,8 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
             SESSION = data || {};
             IS_DE = (typeof SESSION.poolIndex === 'number' && SESSION.poolIndex < 0)
                  || /elimination/i.test(String(SESSION.poolLabel||''));
+            applyWidgetPalette(SESSION.widgetPalette);
+            startPalettePoll();
             ROSTER = Array.isArray(SESSION.roster) ? SESSION.roster.slice().sort((a,b)=>(a.slot||0)-(b.slot||0)) : [];
             boutMap = {};
             (SESSION.bouts||[]).forEach(b=>{ boutMap[b.a_slot+'-'+b.b_slot]=b; });
@@ -1365,12 +1422,19 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
 
     function syncPageChrome(){
         if(timerBtn){
-            timerBtn.classList.toggle('is-active', pageMode === 'bout' && !!timerEl);
-            /* One button, two jobs: it opens the picker when no bout is up,
-               and returns to the bout already on the clock when there is one. */
-            const live = !!timerEl;
-            timerBtn.querySelector('span').textContent = live ? 'Back to Bout' : 'Ref a Bout';
-            timerBtn.title = live ? 'Back to the bout in progress' : 'Ref a bout';
+            /* Two jobs, and which one it is depends on where you are: on the
+               pool sheet it starts a bout, and on the bout it goes back to the
+               pool sheet. It used to say "Back to Bout" while you were already
+               on the bout, which was a no-op sitting next to Cancel. Red on the
+               bout screen, because leaving is the destructive direction. */
+            const onBout = pageMode === 'bout' && !!timerEl;
+            const parked = !onBout && !!timerEl;
+            timerBtn.classList.toggle('is-active', onBout);
+            timerBtn.classList.toggle('is-back', onBout);
+            timerBtn.querySelector('span').textContent =
+                onBout ? 'Back to Home' : (parked ? 'Back to Bout' : 'Ref a Bout');
+            timerBtn.title =
+                onBout ? 'Back to the pool sheet' : (parked ? 'Return to the bout in progress' : 'Ref a bout');
         }
         if(stageEl) stageEl.classList.toggle('is-hidden', pageMode === 'bout' && !!timerEl && !timerEl.classList.contains('is-parked'));
     }
@@ -1539,8 +1603,8 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
                 </div>
             </div>
             <div class="ref-timer-controls">
-                <button class="rbtn rbtn-glass" id="t-double" aria-label="Double touch" title="Double touch">DB<small>Double</small></button>
                 <button class="rbtn" id="t-startpause">Start</button>
+                <button class="rbtn rbtn-glass" id="t-double" aria-label="Double touch" title="Double touch">DB<small>Double Touch</small></button>
                 <div class="ref-timer-under">
                     <button class="rbtn rbtn-glass" id="t-reset" title="Reset timer">Reset</button>
                     <button class="rbtn rbtn-white" id="t-finish">Finish Bout</button>
@@ -1720,15 +1784,12 @@ const SUPABASE_ANON_KEY = "sb_publishable_Hn0-mO7cmkYCD00HtEaBGg_Ami4ZDDv";
     }
 
     timerBtn.addEventListener('click', ()=>{
-        if(timerEl && pageMode === 'bout'){
-            /* already on active bout — keep them there */
-            setPage('bout');
-            return;
-        }
-        if(timerEl){
-            setPage('bout');
-            return;
-        }
+        /* On the bout it goes home, parking the timer rather than ending it —
+           the clock, the scores and the period all survive, so coming back to
+           the bout resumes exactly where it was left. Cancel is still the way
+           to abandon a bout. */
+        if(timerEl && pageMode === 'bout'){ setPage('pools'); return; }
+        if(timerEl){ setPage('bout'); return; }
         openBoutPicker();
     });
     syncPageChrome();
